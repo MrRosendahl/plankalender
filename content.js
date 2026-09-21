@@ -3,6 +3,8 @@
 
   const TARGET_CALENDAR_ID = "370929";
   const VENUES = ["Norrvallen", "Rosvalla", "Hedvalla", "Sjulevi"];
+  const UNKNOWN_VENUE = "Utan anläggning";
+  const UNKNOWN_PITCH = "Ingen plan angiven";
   const ACTIVITY_TYPES = ["Match", "Träning", "Övrigt"];
   const GAME_FORMATS = ["3v3", "5v5", "7v7", "9v9", "11v11"];
   const DEFAULT_MATCH_MINUTES = Object.fromEntries(GAME_FORMATS.map((format) => [format, 120]));
@@ -47,6 +49,14 @@
     return match ? Number(match[1]) * 60 + Number(match[2]) : null;
   }
 
+  function parseEventTimes(cell) {
+    // SportAdmin renders both a mobile start time and a desktop time range in
+    // the same cell. Read the desktop span first to avoid parsing 18:00 twice.
+    const desktopTime = normalize(cell.querySelector(".hidden-phone span")?.textContent ?? "");
+    const source = desktopTime || normalize(cell.textContent);
+    return [...source.matchAll(/\b(\d{1,2}:\d{2})\b/g)].map((match) => parseClock(match[1]));
+  }
+
   function formatClock(minutes) {
     const value = ((minutes % 1440) + 1440) % 1440;
     return `${String(Math.floor(value / 60)).padStart(2, "0")}:${String(value % 60).padStart(2, "0")}`;
@@ -76,25 +86,26 @@
     const team = normalize(links[0]?.textContent ?? "");
     const eventLink = links.find((link) => link.classList.contains("kal")) ?? links[1];
     const eventText = normalize(eventLink?.textContent ?? cells[1].textContent);
-    const venue = VENUES.find((name) => eventText.toLocaleLowerCase("sv-SE").includes(name.toLocaleLowerCase("sv-SE")));
+    const detectedVenue = VENUES.find((name) => eventText.toLocaleLowerCase("sv-SE").includes(name.toLocaleLowerCase("sv-SE")));
+    const venue = detectedVenue ?? UNKNOWN_VENUE;
     const activityLabel = normalize(row.querySelector(".calBox")?.getAttribute("data-original-title") ?? "");
     const activityType = ACTIVITY_TYPES.includes(activityLabel) ? activityLabel : "Övrigt";
-    const times = [...normalize(cells[0].textContent).matchAll(/\b(\d{1,2}:\d{2})\b/g)].map((match) => parseClock(match[1]));
+    const times = parseEventTimes(cells[0]);
     const start = times[0];
     const gameFormat = activityType === "Match" ? inferGameFormat(team, eventText) : "";
     const end = times[1] ?? (activityType === "Match" && start !== null ? start + matchDurations[gameFormat] : null);
-    let pitch = "";
+    let pitch = UNKNOWN_PITCH;
 
-    if (venue) {
+    if (detectedVenue) {
       const commaIndex = eventText.lastIndexOf(",");
       const location = commaIndex >= 0 ? normalize(eventText.slice(commaIndex + 1)) : eventText;
       pitch = normalize(location
         .replace(/\s*\([^)]*\)\s*(?:\([^)]*\)\s*)*$/, "")
-        .replace(new RegExp(`^${venue}\\s*`, "i"), "")) || "Ospecificerad plan";
+        .replace(new RegExp(`^${detectedVenue}\\s*`, "i"), "")) || "Ospecificerad plan";
     }
 
     return {
-      row, dayRow, venue, pitch, activityType, team, text: eventText,
+      row, dayRow, venue, pitch, hasKnownVenue: Boolean(detectedVenue), activityType, team, text: eventText,
       day: normalize(dayRow.cells[1]?.textContent ?? ""),
       weekday: normalize(dayRow.cells[2]?.textContent ?? ""),
       href: eventLink?.href ?? "", start, end, gameFormat,
@@ -137,7 +148,7 @@
   }
 
   function findConflictGroups(events) {
-    const candidates = events.filter((event) => event.venue && event.pitch && event.start !== null && event.end !== null);
+    const candidates = events.filter((event) => event.hasKnownVenue && event.pitch && event.start !== null && event.end !== null);
     const visited = new Set();
     const groups = [];
     candidates.forEach((event) => {
@@ -159,44 +170,68 @@
     return groups.sort((a, b) => Number(a[0].day) - Number(b[0].day) || a[0].start - b[0].start);
   }
 
-  function renderConflictOverview(container, events) {
-    const groups = findConflictGroups(events);
-    const conflictingEvents = new Set(groups.flat());
+  function renderScheduleOverview(container, events) {
+    const conflictGroups = findConflictGroups(events);
+    const conflictingEvents = new Set(conflictGroups.flat());
     document.querySelectorAll(".fcn-conflicting-event").forEach((row) => row.classList.remove("fcn-conflicting-event"));
     conflictingEvents.forEach((event) => event.row.classList.add("fcn-conflicting-event"));
 
-    if (!groups.length) {
-      container.innerHTML = '<div class="fcn-no-conflicts"><strong>Inga krockar hittades</strong><span>för de filter som är valda.</span></div>';
+    const scheduledEvents = events.filter((event) => event.start !== null);
+    if (!scheduledEvents.length) {
+      container.innerHTML = '<div class="fcn-no-conflicts"><strong>Inga bokningar hittades</strong><span>för de filter som är valda.</span></div>';
       return;
     }
 
     const byDay = new Map();
-    groups.forEach((group) => {
-      if (!byDay.has(group[0].dayRow)) byDay.set(group[0].dayRow, []);
-      byDay.get(group[0].dayRow).push(group);
+    scheduledEvents.forEach((event) => {
+      if (!byDay.has(event.dayRow)) byDay.set(event.dayRow, []);
+      byDay.get(event.dayRow).push(event);
     });
 
     const fragment = document.createDocumentFragment();
-    byDay.forEach((dayGroups) => {
+    byDay.forEach((dayEvents) => {
       const section = document.createElement("section");
       section.className = "fcn-conflict-day";
       const heading = document.createElement("h3");
-      heading.textContent = `${dayGroups[0][0].day} ${dayGroups[0][0].weekday}`;
+      heading.textContent = `${dayEvents[0].day} ${dayEvents[0].weekday}`;
       section.append(heading);
-      dayGroups.forEach((group) => {
-        const conflict = document.createElement("article");
-        conflict.className = "fcn-conflict-group";
-        conflict.innerHTML = `<header><strong>${group[0].venue} · ${group[0].pitch}</strong><span>${group.length} överlappande bokningar</span></header>`;
+
+      const byPitch = new Map();
+      dayEvents.forEach((event) => {
+        const key = `${event.venue}\u0000${normalizePitch(event.pitch)}`;
+        if (!byPitch.has(key)) byPitch.set(key, []);
+        byPitch.get(key).push(event);
+      });
+
+      [...byPitch.values()]
+        .sort((first, second) => first[0].venue.localeCompare(second[0].venue, "sv")
+          || first[0].pitch.localeCompare(second[0].pitch, "sv"))
+        .forEach((pitchEvents) => {
+        pitchEvents.sort((first, second) => first.start - second.start);
+        const hasConflict = pitchEvents.some((event) => conflictingEvents.has(event));
+        const group = document.createElement("article");
+        group.className = `fcn-conflict-group${hasConflict ? " fcn-group-has-conflict" : ""}`;
+
+        const header = document.createElement("header");
+        const title = document.createElement("strong");
+        title.textContent = `${pitchEvents[0].venue} · ${pitchEvents[0].pitch}`;
+        const status = document.createElement("span");
+        status.textContent = hasConflict ? "Krock" : `${pitchEvents.length} ${pitchEvents.length === 1 ? "bokning" : "bokningar"}`;
+        header.append(title, status);
+        group.append(header);
+
         const list = document.createElement("ul");
-        group.forEach((event) => {
+        pitchEvents.forEach((event) => {
           const item = document.createElement("li");
+          item.classList.toggle("fcn-list-event-conflict", conflictingEvents.has(event));
           const typeClass = event.activityType.toLocaleLowerCase("sv-SE").replace("ä", "a").replace("ö", "o");
-          item.innerHTML = `<time>${formatClock(event.start)}–${formatClock(event.end)}</time><span class="fcn-type fcn-type-${typeClass}">${event.activityType}</span>`;
-          const title = event.href ? document.createElement("a") : document.createElement("span");
-          title.className = "fcn-event-title";
-          title.textContent = `${event.team ? `${event.team} · ` : ""}${event.text.split(",")[0]}`;
-          if (event.href) title.href = event.href;
-          item.append(title);
+          const timeText = event.end === null ? formatClock(event.start) : `${formatClock(event.start)}–${formatClock(event.end)}`;
+          item.innerHTML = `<time>${timeText}</time><span class="fcn-type fcn-type-${typeClass}">${event.activityType}</span>`;
+          const eventTitle = event.href ? document.createElement("a") : document.createElement("span");
+          eventTitle.className = "fcn-event-title";
+          eventTitle.textContent = `${event.team ? `${event.team} · ` : ""}${event.text.split(",")[0]}`;
+          if (event.href) eventTitle.href = event.href;
+          item.append(eventTitle);
           if (event.hasCalculatedEnd) {
             const calculated = document.createElement("small");
             calculated.textContent = `${event.gameFormat}, beräknad sluttid`;
@@ -204,8 +239,8 @@
           }
           list.append(item);
         });
-        conflict.append(list);
-        section.append(conflict);
+        group.append(list);
+        section.append(group);
       });
       fragment.append(section);
     });
@@ -231,12 +266,15 @@
     if (!events.length) return false;
     observedEventRows = allEventRows;
 
+    const calendarWrapper = calendars[0].closest("#calWrap");
+    calendarWrapper?.classList.add("fcn-calendar-replaced");
+
     const toolbar = document.createElement("section");
     toolbar.id = TOOLBAR_ID;
-    toolbar.setAttribute("aria-label", "Hitta krockar i plankalendern");
+    toolbar.setAttribute("aria-label", "Grupperad plankalender med krockar");
     toolbar.innerHTML = `
       <div class="fcn-filter-heading">
-        <div><strong>Plankrockar</strong><span>Överlappande bokningar på samma plan visas samlat.</span></div>
+        <div><strong>Plankalender</strong><span>Alla bokningar grupperas per dag, anläggning och plan. Krockar markeras rött.</span></div>
         <output id="fcn-conflict-count" aria-live="polite"></output>
       </div>
       <div class="fcn-filter-controls">
@@ -263,7 +301,8 @@
 
     venueSelect.append(createOption("", "Alla anläggningar"));
     VENUES.forEach((venue) => venueSelect.append(createOption(venue)));
-    venueSelect.value = VENUES.includes(previousVenue) ? previousVenue : "";
+    if (events.some((event) => !event.hasKnownVenue)) venueSelect.append(createOption(UNKNOWN_VENUE));
+    venueSelect.value = [...venueSelect.options].some((option) => option.value === previousVenue) ? previousVenue : "";
     activitySelect.append(createOption("", "Alla aktivitetstyper"));
     ACTIVITY_TYPES.forEach((type) => activitySelect.append(createOption(type)));
     activitySelect.value = ACTIVITY_TYPES.includes(previousActivity) ? previousActivity : "";
@@ -311,9 +350,10 @@
       });
 
       const groups = findConflictGroups(filtered);
-      count.textContent = `${groups.length} ${groups.length === 1 ? "krock" : "krockar"}`;
+      const bookingCount = filtered.length;
+      count.textContent = `${groups.length} ${groups.length === 1 ? "krock" : "krockar"} · ${bookingCount} bokningar`;
       count.classList.toggle("fcn-count-clear", groups.length === 0);
-      renderConflictOverview(overview, filtered);
+      renderScheduleOverview(overview, filtered);
     }
 
     venueSelect.addEventListener("change", () => { updatePitchOptions(); applyFilter(); });
