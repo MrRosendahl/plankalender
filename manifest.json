@@ -1,0 +1,14 @@
+{
+  "manifest_version": 3,
+  "name": "FC Norrsken Plankalender",
+  "version": "0.1.5",
+  "description": "Filtrerar FC Norrskens kalender per anläggning och plan.",
+  "content_scripts": [
+    {
+      "matches": ["https://www.fcnorrsken.se/kalender/*"],
+      "js": ["content.js"],
+      "css": ["styles.css"],
+      "run_at": "document_idle"
+    }
+  ]
+}
