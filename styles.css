@@ -9,9 +9,9 @@
 }
 
 #fcn-plankalender {
-  box-sizing: border-box; clear: both; width: 100%; margin: 0 0 20px; border: 1px solid #d6e0e5; border-radius: 12px;
-  background: #f7fafb; color: #24333b; box-shadow: 0 3px 12px rgba(24, 45, 56, 0.09);
-  font-family: Arial, sans-serif; overflow: hidden;
+  box-sizing: border-box; clear: both; width: 100%; margin: 0 0 20px;
+  background: #f7fafb; color: #24333b;
+  font-family: Arial, sans-serif;
 }
 
 #fcn-plankalender .fcn-filter-heading {
@@ -62,13 +62,15 @@
   border-radius: 0 6px 6px 0; background: #edf2f4; font-size: 11px;
 }
 
-#fcn-plankalender #fcn-conflict-overview { padding: 2px 20px 8px; }
+#fcn-plankalender #fcn-conflict-overview { padding: 2px 0 8px; }
 #fcn-plankalender .fcn-conflict-day { margin: 0 0 22px; }
 #fcn-plankalender .fcn-conflict-day h3 {
-  display: grid;
-  gap: 2px;
-  margin: 0 -20px 10px;
-  padding: 10px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  margin: 0 0 10px;
+  padding: 10px 12px;
   border-top: 1px solid #b8cad4;
   border-bottom: 1px solid #b8cad4;
   background: #dce8ee;
@@ -81,8 +83,8 @@
   color: #58717f;
   font-size: 10px;
   font-weight: 400;
-  letter-spacing: 0;
-  text-transform: none;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
 }
 #fcn-plankalender .fcn-conflict-group {
   margin: 0 0 8px; border: 1px solid #dbe3e7; border-left: 4px solid #7895a5;
@@ -106,7 +108,9 @@
 }
 #fcn-plankalender .fcn-conflict-group time { font-weight: 700; font-variant-numeric: tabular-nums; }
 #fcn-plankalender .fcn-event-title { min-width: 0; color: #244f67; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#fcn-plankalender .fcn-event-match .fcn-event-title { font-weight: 700; }
 #fcn-plankalender .fcn-conflict-group small { grid-column: 3; margin-top: -6px; color: #75848b; font-size: 10px; }
+#fcn-plankalender .fcn-conflict-group .fcn-conflict-details { margin-top: 0; color: #9b3029; font-weight: 700; }
 #fcn-plankalender .fcn-type { width: fit-content; padding: 3px 7px; border-radius: 999px; font-size: 10px; font-weight: 700; }
 #fcn-plankalender .fcn-type-match { background: #dcecf8; color: #235d82; }
 #fcn-plankalender .fcn-type-traning { background: #e4f1e8; color: #2f6742; }

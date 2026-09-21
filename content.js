@@ -148,7 +148,8 @@
   }
 
   function eventsOverlap(first, second) {
-    return first.dayRow === second.dayRow
+    return first.hasKnownVenue && second.hasKnownVenue
+      && first.dayRow === second.dayRow
       && first.venue === second.venue
       && pitchesOverlap(first.pitch, second.pitch)
       && first.start !== null && first.end !== null && second.start !== null && second.end !== null
@@ -178,9 +179,25 @@
     return groups.sort((a, b) => Number(a[0].day) - Number(b[0].day) || a[0].start - b[0].start);
   }
 
+  function findConflictPartners(events) {
+    const partners = new Map(events.map((event) => [event, []]));
+    for (let firstIndex = 0; firstIndex < events.length; firstIndex += 1) {
+      for (let secondIndex = firstIndex + 1; secondIndex < events.length; secondIndex += 1) {
+        const first = events[firstIndex];
+        const second = events[secondIndex];
+        if (!eventsOverlap(first, second)) continue;
+        partners.get(first).push(second);
+        partners.get(second).push(first);
+      }
+    }
+    partners.forEach((items) => items.sort((first, second) => first.start - second.start));
+    return partners;
+  }
+
   function renderScheduleOverview(container, events) {
     const conflictGroups = findConflictGroups(events);
     const conflictingEvents = new Set(conflictGroups.flat());
+    const conflictPartners = findConflictPartners(events);
     document.querySelectorAll(".fcn-conflicting-event").forEach((row) => row.classList.remove("fcn-conflicting-event"));
     conflictingEvents.forEach((event) => event.row.classList.add("fcn-conflicting-event"));
 
@@ -197,16 +214,23 @@
     });
 
     const fragment = document.createDocumentFragment();
+    let currentWeek = null;
     byDay.forEach((dayEvents) => {
+      const week = dayEvents[0].week;
+      const isFirstDayOfWeek = week !== currentWeek;
+      if (isFirstDayOfWeek) {
+        currentWeek = week;
+      }
+
       const section = document.createElement("section");
       section.className = "fcn-conflict-day";
       const heading = document.createElement("h3");
       const dayLabel = document.createElement("span");
       dayLabel.textContent = `${dayEvents[0].day} ${dayEvents[0].weekday}`;
       heading.append(dayLabel);
-      if (dayEvents[0].week) {
+      if (isFirstDayOfWeek && week) {
         const weekLabel = document.createElement("small");
-        weekLabel.textContent = `Vecka ${dayEvents[0].week}`;
+        weekLabel.textContent = `Vecka ${week}`;
         heading.append(weekLabel);
       }
       section.append(heading);
@@ -231,7 +255,10 @@
         const title = document.createElement("strong");
         title.textContent = `${pitchEvents[0].venue} · ${pitchEvents[0].pitch}`;
         const status = document.createElement("span");
-        status.textContent = hasConflict ? "Krock" : `${pitchEvents.length} ${pitchEvents.length === 1 ? "bokning" : "bokningar"}`;
+        const conflictCount = pitchEvents.filter((event) => conflictingEvents.has(event)).length;
+        status.textContent = hasConflict
+          ? `${conflictCount} krockande ${conflictCount === 1 ? "bokning" : "bokningar"}`
+          : `${pitchEvents.length} ${pitchEvents.length === 1 ? "bokning" : "bokningar"}`;
         header.append(title, status);
         group.append(header);
 
@@ -240,6 +267,7 @@
           const item = document.createElement("li");
           item.classList.toggle("fcn-list-event-conflict", conflictingEvents.has(event));
           const typeClass = event.activityType.toLocaleLowerCase("sv-SE").replace("ä", "a").replace("ö", "o");
+          item.classList.add(`fcn-event-${typeClass}`);
           const timeText = event.end === null ? formatClock(event.start) : `${formatClock(event.start)}–${formatClock(event.end)}`;
           item.innerHTML = `<time>${timeText}</time><span class="fcn-type fcn-type-${typeClass}">${event.activityType}</span>`;
           const eventTitle = event.href ? document.createElement("a") : document.createElement("span");
@@ -247,8 +275,18 @@
           eventTitle.textContent = `${event.team ? `${event.team} · ` : ""}${event.text.split(",")[0]}`;
           if (event.href) eventTitle.href = event.href;
           item.append(eventTitle);
+          const partners = conflictPartners.get(event) ?? [];
+          if (partners.length) {
+            const conflictDetails = document.createElement("small");
+            conflictDetails.className = "fcn-conflict-details";
+            conflictDetails.textContent = `Överlappar: ${partners.map((partner) =>
+              `${formatClock(partner.start)}–${formatClock(partner.end)} · ${partner.team || partner.activityType} · ${partner.pitch}`
+            ).join("; ")}`;
+            item.append(conflictDetails);
+          }
           if (event.hasCalculatedEnd) {
             const calculated = document.createElement("small");
+            calculated.className = "fcn-calculated-end";
             calculated.textContent = `${event.gameFormat}, beräknad sluttid`;
             item.append(calculated);
           }
