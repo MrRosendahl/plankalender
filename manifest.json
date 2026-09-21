@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "FC Norrsken Plankalender",
-  "version": "0.2.0",
-  "description": "Filtrerar FC Norrskens kalender per anläggning, plan och aktivitetstyp.",
+  "version": "0.3.0",
+  "description": "Hittar krockar mellan matcher, träningar och övriga bokningar per plan.",
   "content_scripts": [
     {
       "matches": ["https://www.fcnorrsken.se/kalender/*"],

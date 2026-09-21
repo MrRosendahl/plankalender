@@ -2,13 +2,18 @@
 
 En lokal Chrome/Edge-extension som kompletterar FC Norrskens kalender med filter för anläggning och plan. Den ändrar inte webbplatsen för andra användare och skickar ingen information till någon extern tjänst.
 
-## Funktioner i första versionen
+## Funktioner
 
 - Körs bara på kalenderadressen när `ID=370929`.
 - Läser kalendern i `#myForm`.
 - Filtrerar bokningar för Norrvallen, Rosvalla, Hedvalla och Sjulevi.
-- Visar en andra dropdown med de planer som hittats för vald anläggning.
-- Döljer dagar utan träffar när ett filter används.
+- Visar krockar som en kompakt lista grupperad per dag och plan, inte som kalenderblock.
+- Jämför matcher, träningar och övriga bokningar med angivna start- och sluttider.
+- Räknar som standard en match utan sluttid som två timmar.
+- Låter användaren ändra standardtiden för 3v3, 5v5, 7v7, 9v9 och 11v11. Inställningarna sparas lokalt i webbläsaren.
+- Markerar även de berörda raderna i den vanliga kalendern.
+
+Krockkontrollen kräver samma datum och anläggning, överlappande tider och samma plan. En bokning av hela konstgräsplanen jämförs också med dess delplaner. Om kalendern anger en sluttid används den alltid i stället för den konfigurerade standardtiden.
 
 ## Installera lokalt
 

@@ -1,104 +1,94 @@
-#myForm .fcn-hidden-by-filter {
-  display: none !important;
-}
+#myForm .fcn-hidden-by-filter { display: none !important; }
+#myForm .fcn-conflicting-event > td:last-child { border-right: 3px solid #c7382f; }
 
 #fcn-plankalender {
-  box-sizing: border-box;
-  margin: 0 0 18px;
-  padding: 18px;
-  border: 1px solid #d7e1e7;
-  border-radius: 10px;
-  background: #f7fafc;
-  color: #24313a;
-  box-shadow: 0 2px 8px rgba(25, 45, 58, 0.08);
-  font-family: Arial, sans-serif;
+  box-sizing: border-box; margin: 0 0 20px; border: 1px solid #d6e0e5; border-radius: 12px;
+  background: #f7fafb; color: #24333b; box-shadow: 0 3px 12px rgba(24, 45, 56, 0.09);
+  font-family: Arial, sans-serif; overflow: hidden;
 }
 
 #fcn-plankalender .fcn-filter-heading {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 8px 14px;
-  margin-bottom: 14px;
+  display: flex; justify-content: space-between; align-items: center; gap: 16px;
+  padding: 18px 20px 14px; background: #fff; border-bottom: 1px solid #e3eaed;
 }
-
-#fcn-plankalender .fcn-filter-heading strong {
-  color: #155b84;
-  font-size: 20px;
+#fcn-plankalender .fcn-filter-heading > div { display: grid; gap: 3px; }
+#fcn-plankalender .fcn-filter-heading strong { color: #174f70; font-size: 21px; }
+#fcn-plankalender .fcn-filter-heading span { color: #60717a; font-size: 13px; }
+#fcn-plankalender #fcn-conflict-count {
+  flex: 0 0 auto; padding: 6px 10px; border-radius: 999px; background: #fee9e7;
+  color: #a72922; font-size: 13px; font-weight: 700;
 }
-
-#fcn-plankalender .fcn-filter-heading span,
-#fcn-plankalender #fcn-filter-result {
-  color: #536671;
-  font-size: 13px;
-}
+#fcn-plankalender #fcn-conflict-count.fcn-count-clear { background: #e5f4eb; color: #24683f; }
 
 #fcn-plankalender .fcn-filter-controls {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: end;
-  gap: 12px;
+  display: flex; flex-wrap: wrap; align-items: end; gap: 10px; padding: 14px 20px;
 }
-
 #fcn-plankalender label {
-  display: grid;
-  gap: 5px;
-  min-width: 210px;
-  margin: 0;
-  color: #334752;
-  font-size: 12px;
-  font-weight: 700;
+  display: grid; gap: 5px; min-width: 175px; margin: 0; color: #344851;
+  font-size: 12px; font-weight: 700;
+}
+#fcn-plankalender select, #fcn-plankalender button, #fcn-plankalender input {
+  box-sizing: border-box; min-height: 38px; margin: 0; border: 1px solid #abbac2;
+  border-radius: 6px; background: #fff; color: #203039; font: 14px Arial, sans-serif;
+}
+#fcn-plankalender select { padding: 7px 30px 7px 9px; }
+#fcn-plankalender select:disabled { background: #e9eef0; color: #7c898f; }
+#fcn-plankalender select:focus, #fcn-plankalender button:focus, #fcn-plankalender input:focus {
+  outline: 3px solid rgba(23, 79, 112, 0.22); outline-offset: 1px;
+}
+#fcn-plankalender button { padding: 7px 13px; cursor: pointer; font-weight: 700; }
+#fcn-plankalender .fcn-secondary-button { color: #174f70; border-color: #7895a5; }
+#fcn-plankalender .fcn-secondary-button:hover { background: #eaf1f5; }
+
+#fcn-plankalender .fcn-duration-settings {
+  margin: 0 20px 15px; padding: 10px 12px; border: 1px solid #dbe3e7;
+  border-radius: 7px; background: #fff;
+}
+#fcn-plankalender .fcn-duration-settings summary { color: #174f70; cursor: pointer; font-size: 13px; font-weight: 700; }
+#fcn-plankalender .fcn-duration-settings p { margin: 8px 0 10px; color: #697980; font-size: 12px; }
+#fcn-plankalender .fcn-duration-inputs { display: flex; flex-wrap: wrap; gap: 10px; }
+#fcn-plankalender .fcn-duration-inputs label { min-width: 95px; }
+#fcn-plankalender .fcn-number-field { display: flex; align-items: center; }
+#fcn-plankalender .fcn-number-field input { width: 70px; padding: 6px; border-radius: 6px 0 0 6px; }
+#fcn-plankalender .fcn-number-field > span {
+  height: 36px; padding: 10px 7px 0; border: 1px solid #abbac2; border-left: 0;
+  border-radius: 0 6px 6px 0; background: #edf2f4; font-size: 11px;
 }
 
-#fcn-plankalender select,
-#fcn-plankalender button {
-  box-sizing: border-box;
-  min-height: 40px;
-  margin: 0;
-  border: 1px solid #aebdc6;
-  border-radius: 6px;
-  background: #fff;
-  color: #20303a;
-  font: 14px Arial, sans-serif;
+#fcn-plankalender #fcn-conflict-overview { padding: 2px 20px 8px; }
+#fcn-plankalender .fcn-conflict-day { margin: 0 0 18px; }
+#fcn-plankalender .fcn-conflict-day h3 { margin: 0 0 7px; color: #344851; font-size: 14px; text-transform: uppercase; }
+#fcn-plankalender .fcn-conflict-group {
+  margin: 0 0 8px; border: 1px solid #e1c6c3; border-left: 4px solid #c7382f;
+  border-radius: 7px; background: #fff; overflow: hidden;
 }
-
-#fcn-plankalender select {
-  padding: 8px 34px 8px 10px;
+#fcn-plankalender .fcn-conflict-group header {
+  display: flex; justify-content: space-between; gap: 12px; padding: 8px 11px;
+  background: #fff4f2; color: #71322d; font-size: 12px;
 }
-
-#fcn-plankalender select:focus,
-#fcn-plankalender button:focus {
-  outline: 3px solid rgba(21, 91, 132, 0.25);
-  outline-offset: 1px;
+#fcn-plankalender .fcn-conflict-group ul { margin: 0; padding: 0; list-style: none; }
+#fcn-plankalender .fcn-conflict-group li {
+  display: grid; grid-template-columns: 100px 72px minmax(160px, 1fr); align-items: center;
+  gap: 8px; padding: 8px 11px; border-top: 1px solid #edf0f1; font-size: 12px;
 }
-
-#fcn-plankalender select:disabled {
-  background: #edf1f3;
-  color: #7a888f;
+#fcn-plankalender .fcn-conflict-group time { font-weight: 700; font-variant-numeric: tabular-nums; }
+#fcn-plankalender .fcn-event-title { min-width: 0; color: #244f67; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#fcn-plankalender .fcn-conflict-group small { grid-column: 3; margin-top: -6px; color: #75848b; font-size: 10px; }
+#fcn-plankalender .fcn-type { width: fit-content; padding: 3px 7px; border-radius: 999px; font-size: 10px; font-weight: 700; }
+#fcn-plankalender .fcn-type-match { background: #dcecf8; color: #235d82; }
+#fcn-plankalender .fcn-type-traning { background: #e4f1e8; color: #2f6742; }
+#fcn-plankalender .fcn-type-ovrigt { background: #eee9f5; color: #624c7a; }
+#fcn-plankalender .fcn-no-conflicts {
+  display: grid; place-items: center; gap: 3px; padding: 26px; border: 1px dashed #b9cac1;
+  border-radius: 7px; background: #f4faf6; color: #2c6642;
 }
-
-#fcn-plankalender button {
-  padding: 8px 14px;
-  border-color: #155b84;
-  background: #155b84;
-  color: #fff;
-  cursor: pointer;
-  font-weight: 700;
-}
-
-#fcn-plankalender button:hover {
-  background: #0e496d;
-}
-
-#fcn-plankalender #fcn-filter-result {
-  min-height: 18px;
-  margin: 12px 0 0;
-}
+#fcn-plankalender .fcn-no-conflicts span { color: #60756a; font-size: 12px; }
+#fcn-plankalender .fcn-method-note { margin: 0; padding: 10px 20px 13px; color: #718087; font-size: 11px; }
 
 @media (max-width: 600px) {
-  #fcn-plankalender label,
-  #fcn-plankalender select,
-  #fcn-plankalender button {
-    width: 100%;
-  }
+  #fcn-plankalender .fcn-filter-heading { align-items: flex-start; }
+  #fcn-plankalender label, #fcn-plankalender select, #fcn-plankalender .fcn-secondary-button { width: 100%; }
+  #fcn-plankalender .fcn-conflict-group header { display: grid; }
+  #fcn-plankalender .fcn-conflict-group li { grid-template-columns: 1fr auto; }
+  #fcn-plankalender .fcn-event-title, #fcn-plankalender .fcn-conflict-group small { grid-column: 1 / -1; white-space: normal; }
 }
