@@ -7,7 +7,8 @@ En lokal Chrome/Edge-extension som kompletterar FC Norrskens kalender med filter
 - Körs bara på kalenderadressen när `ID=370929`.
 - Läser kalendern i `#myForm`.
 - Filtrerar bokningar för Norrvallen, Rosvalla, Hedvalla och Sjulevi samt aktiviteter utan angiven anläggning, exempelvis bortamatcher.
-- Visar alla bokningar som en kompakt lista grupperad per dag, anläggning och plan, inte som kalenderblock.
+- Visar hela månaden som standard men låter användaren begränsa listan till en enskild vecka.
+- Visar alla bokningar som en kompakt lista grupperad per dag, anläggning och plan, med veckonummer i varje dagsrubrik.
 - Markerar krockande grupper och bokningar med rött.
 - Jämför matcher, träningar och övriga bokningar med angivna start- och sluttider.
 - Räknar som standard en match utan sluttid som två timmar.

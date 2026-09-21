@@ -65,6 +65,8 @@
 #fcn-plankalender #fcn-conflict-overview { padding: 2px 20px 8px; }
 #fcn-plankalender .fcn-conflict-day { margin: 0 0 22px; }
 #fcn-plankalender .fcn-conflict-day h3 {
+  display: grid;
+  gap: 2px;
   margin: 0 -20px 10px;
   padding: 10px 20px;
   border-top: 1px solid #b8cad4;
@@ -74,6 +76,13 @@
   font-size: 14px;
   letter-spacing: 0.03em;
   text-transform: uppercase;
+}
+#fcn-plankalender .fcn-conflict-day h3 small {
+  color: #58717f;
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
 }
 #fcn-plankalender .fcn-conflict-group {
   margin: 0 0 8px; border: 1px solid #dbe3e7; border-left: 4px solid #7895a5;

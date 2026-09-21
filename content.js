@@ -44,6 +44,11 @@
     return getDayRows(container).flatMap((dayRow) => [...dayRow.querySelectorAll(EVENT_ROW_SELECTOR)]);
   }
 
+  function getCalendarWeek(calendar) {
+    const weekText = normalize(calendar.previousElementSibling?.textContent ?? "");
+    return weekText.match(/v\.\s*(\d+)/i)?.[1] ?? "";
+  }
+
   function parseClock(value) {
     const match = value.match(/\b(\d{1,2}):(\d{2})\b/);
     return match ? Number(match[1]) * 60 + Number(match[2]) : null;
@@ -78,7 +83,7 @@
     return "11v11";
   }
 
-  function parseEvent(row, dayRow, matchDurations) {
+  function parseEvent(row, dayRow, week, matchDurations) {
     const cells = row.cells;
     if (cells.length < 2) return null;
 
@@ -106,7 +111,7 @@
 
     return {
       row, dayRow, venue, pitch, hasKnownVenue: Boolean(detectedVenue), activityType, team, text: eventText,
-      day: normalize(dayRow.cells[1]?.textContent ?? ""),
+      day: normalize(dayRow.cells[1]?.textContent ?? ""), week,
       weekday: normalize(dayRow.cells[2]?.textContent ?? ""),
       href: eventLink?.href ?? "", start, end, gameFormat,
       hasCalculatedEnd: times.length === 1 && activityType === "Match"
@@ -114,10 +119,13 @@
   }
 
   function collectEvents(calendars, matchDurations) {
-    return calendars.flatMap(getDayRows).flatMap((dayRow) =>
-      [...dayRow.querySelectorAll(EVENT_ROW_SELECTOR)]
-        .map((row) => parseEvent(row, dayRow, matchDurations))
-        .filter(Boolean));
+    return calendars.flatMap((calendar) => {
+      const week = getCalendarWeek(calendar);
+      return getDayRows(calendar).flatMap((dayRow) =>
+        [...dayRow.querySelectorAll(EVENT_ROW_SELECTOR)]
+          .map((row) => parseEvent(row, dayRow, week, matchDurations))
+          .filter(Boolean));
+    });
   }
 
   function createOption(value, label = value) {
@@ -193,7 +201,14 @@
       const section = document.createElement("section");
       section.className = "fcn-conflict-day";
       const heading = document.createElement("h3");
-      heading.textContent = `${dayEvents[0].day} ${dayEvents[0].weekday}`;
+      const dayLabel = document.createElement("span");
+      dayLabel.textContent = `${dayEvents[0].day} ${dayEvents[0].weekday}`;
+      heading.append(dayLabel);
+      if (dayEvents[0].week) {
+        const weekLabel = document.createElement("small");
+        weekLabel.textContent = `Vecka ${dayEvents[0].week}`;
+        heading.append(weekLabel);
+      }
       section.append(heading);
 
       const byPitch = new Map();
@@ -259,6 +274,7 @@
     const previousVenue = existingToolbar?.querySelector("#fcn-venue-filter")?.value ?? "";
     const previousPitch = existingToolbar?.querySelector("#fcn-pitch-filter")?.value ?? "";
     const previousActivity = existingToolbar?.querySelector("#fcn-activity-filter")?.value ?? "";
+    const previousWeek = existingToolbar?.querySelector("#fcn-week-filter")?.value ?? "";
     existingToolbar?.remove();
 
     let matchDurations = loadMatchDurations();
@@ -278,6 +294,7 @@
         <output id="fcn-conflict-count" aria-live="polite"></output>
       </div>
       <div class="fcn-filter-controls">
+        <label><span>Period</span><select id="fcn-week-filter"></select></label>
         <label><span>Anläggning</span><select id="fcn-venue-filter"></select></label>
         <label><span>Plan</span><select id="fcn-pitch-filter" disabled></select></label>
         <label><span>Aktivitetstyp</span><select id="fcn-activity-filter"></select></label>
@@ -292,12 +309,19 @@
       <p class="fcn-method-note">Krockar jämförs på samma datum och plan. Hela konstgräsplanen räknas även mot dess delplaner. En angiven sluttid gäller alltid före standardtiden.</p>`;
     calendars[0].parentElement.insertBefore(toolbar, calendars[0]);
 
+    const weekSelect = toolbar.querySelector("#fcn-week-filter");
     const venueSelect = toolbar.querySelector("#fcn-venue-filter");
     const pitchSelect = toolbar.querySelector("#fcn-pitch-filter");
     const activitySelect = toolbar.querySelector("#fcn-activity-filter");
     const overview = toolbar.querySelector("#fcn-conflict-overview");
     const count = toolbar.querySelector("#fcn-conflict-count");
     const durationInputs = toolbar.querySelector(".fcn-duration-inputs");
+
+    const weeks = [...new Set(events.map((event) => event.week).filter(Boolean))]
+      .sort((first, second) => Number(first) - Number(second));
+    weekSelect.append(createOption("", "Hela månaden"));
+    weeks.forEach((week) => weekSelect.append(createOption(week, `Vecka ${week}`)));
+    weekSelect.value = weeks.includes(previousWeek) ? previousWeek : "";
 
     venueSelect.append(createOption("", "Alla anläggningar"));
     VENUES.forEach((venue) => venueSelect.append(createOption(venue)));
@@ -316,7 +340,10 @@
     function updatePitchOptions() {
       const selectedVenue = venueSelect.value;
       const currentPitch = pitchSelect.value;
-      const pitches = [...new Set(events.filter((event) => !selectedVenue || event.venue === selectedVenue).map((event) => event.pitch).filter(Boolean))]
+      const pitches = [...new Set(events.filter((event) =>
+        (!weekSelect.value || event.week === weekSelect.value)
+        && (!selectedVenue || event.venue === selectedVenue))
+        .map((event) => event.pitch).filter(Boolean))]
         .sort((a, b) => a.localeCompare(b, "sv"));
       pitchSelect.replaceChildren(createOption("", "Alla planer"));
       pitches.forEach((pitch) => pitchSelect.append(createOption(pitch)));
@@ -325,9 +352,10 @@
     }
 
     function applyFilter() {
-      const active = venueSelect.value || pitchSelect.value || activitySelect.value;
+      const active = weekSelect.value || venueSelect.value || pitchSelect.value || activitySelect.value;
       const filtered = events.filter((event) =>
-        (!venueSelect.value || event.venue === venueSelect.value)
+        (!weekSelect.value || event.week === weekSelect.value)
+        && (!venueSelect.value || event.venue === venueSelect.value)
         && (!pitchSelect.value || event.pitch === pitchSelect.value)
         && (!activitySelect.value || event.activityType === activitySelect.value));
 
@@ -356,10 +384,12 @@
       renderScheduleOverview(overview, filtered);
     }
 
+    weekSelect.addEventListener("change", () => { updatePitchOptions(); applyFilter(); });
     venueSelect.addEventListener("change", () => { updatePitchOptions(); applyFilter(); });
     pitchSelect.addEventListener("change", applyFilter);
     activitySelect.addEventListener("change", applyFilter);
     toolbar.querySelector("#fcn-reset-filter").addEventListener("click", () => {
+      weekSelect.value = "";
       venueSelect.value = "";
       pitchSelect.value = "";
       activitySelect.value = "";
