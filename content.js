@@ -4,7 +4,6 @@
   const TARGET_CALENDAR_ID = "370929";
   const VENUES = ["Norrvallen", "Rosvalla", "Hedvalla", "Sjulevi"];
   const TOOLBAR_ID = "fcn-plankalender";
-  const DAY_ROW_SELECTOR = "tr.dag, tr.son";
   const EVENT_ROW_SELECTOR = ":scope > td:nth-child(4) > table > tbody > tr";
   let observedEventRows = [];
 
@@ -18,15 +17,16 @@
     const form = document.querySelector("#myForm");
     if (!form) return [];
 
-    return [...form.querySelectorAll("table.mCal")].filter((table) =>
-      [...table.querySelectorAll(DAY_ROW_SELECTOR)].some((dayRow) =>
-        dayRow.querySelector(EVENT_ROW_SELECTOR)
-      )
-    );
+    return [...form.querySelectorAll("table.mCal")].filter((table) => getDayRows(table).length);
+  }
+
+  function getDayRows(calendar) {
+    const rows = calendar.tBodies[0]?.rows ?? [];
+    return [...rows].filter((row) => row.querySelector(EVENT_ROW_SELECTOR));
   }
 
   function getEventRows(container) {
-    return [...container.querySelectorAll(DAY_ROW_SELECTOR)]
+    return getDayRows(container)
       .flatMap((dayRow) => [...dayRow.querySelectorAll(EVENT_ROW_SELECTOR)]);
   }
 
@@ -54,7 +54,6 @@
 
     return {
       row,
-      dayRow: row.closest(DAY_ROW_SELECTOR),
       venue,
       pitch,
       team,
@@ -167,7 +166,7 @@
         if (active && visible) visibleCount += 1;
       });
 
-      const dayRows = calendars.flatMap((calendar) => [...calendar.querySelectorAll(DAY_ROW_SELECTOR)]);
+      const dayRows = calendars.flatMap(getDayRows);
       dayRows.forEach((dayRow) => {
         const eventRows = [...dayRow.querySelectorAll(EVENT_ROW_SELECTOR)];
         const hasVisibleEvent = eventRows.some((row) => !row.classList.contains("fcn-hidden-by-filter"));
