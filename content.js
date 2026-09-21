@@ -3,6 +3,7 @@
 
   const TARGET_CALENDAR_ID = "370929";
   const VENUES = ["Norrvallen", "Rosvalla", "Hedvalla", "Sjulevi"];
+  const ACTIVITY_TYPES = ["Match", "Träning", "Övrigt"];
   const TOOLBAR_ID = "fcn-plankalender";
   const EVENT_ROW_SELECTOR = ":scope > td:nth-child(4) > table > tbody > tr";
   let observedEventRows = [];
@@ -41,21 +42,27 @@
     const venue = VENUES.find((name) =>
       eventText.toLocaleLowerCase("sv-SE").includes(name.toLocaleLowerCase("sv-SE"))
     );
+    const activityLabel = normalize(
+      row.querySelector(".calBox")?.getAttribute("data-original-title") ?? ""
+    );
+    const activityType = ACTIVITY_TYPES.includes(activityLabel) ? activityLabel : "Övrigt";
+    let pitch = "";
 
-    if (!venue) return null;
-
-    const commaIndex = eventText.lastIndexOf(",");
-    const location = commaIndex >= 0 ? normalize(eventText.slice(commaIndex + 1)) : eventText;
-    const pitch = normalize(
-      location
-        .replace(new RegExp(`^${venue}\\s*`, "i"), "")
-        .replace(/\s*\(\s*\)\s*$/, "")
-    ) || "Ospecificerad plan";
+    if (venue) {
+      const commaIndex = eventText.lastIndexOf(",");
+      const location = commaIndex >= 0 ? normalize(eventText.slice(commaIndex + 1)) : eventText;
+      pitch = normalize(
+        location
+          .replace(new RegExp(`^${venue}\\s*`, "i"), "")
+          .replace(/\s*\(\s*\)\s*$/, "")
+      ) || "Ospecificerad plan";
+    }
 
     return {
       row,
       venue,
       pitch,
+      activityType,
       team,
       text: eventText
     };
@@ -88,6 +95,7 @@
 
     const previousVenue = existingToolbar?.querySelector("#fcn-venue-filter")?.value ?? "";
     const previousPitch = existingToolbar?.querySelector("#fcn-pitch-filter")?.value ?? "";
+    const previousActivity = existingToolbar?.querySelector("#fcn-activity-filter")?.value ?? "";
     existingToolbar?.remove();
 
     const events = collectEvents(calendars);
@@ -97,11 +105,11 @@
 
     const toolbar = document.createElement("section");
     toolbar.id = TOOLBAR_ID;
-    toolbar.setAttribute("aria-label", "Filtrera kalendern per anläggning och plan");
+    toolbar.setAttribute("aria-label", "Filtrera kalendern per anläggning, plan och aktivitetstyp");
     toolbar.innerHTML = `
       <div class="fcn-filter-heading">
         <strong>Plankalender</strong>
-        <span>Visa bokningar för en viss anläggning och plan.</span>
+        <span>Visa bokningar för en viss anläggning, plan och aktivitetstyp.</span>
       </div>
       <div class="fcn-filter-controls">
         <label>
@@ -112,6 +120,10 @@
           <span>Plan</span>
           <select id="fcn-pitch-filter" disabled></select>
         </label>
+        <label>
+          <span>Aktivitetstyp</span>
+          <select id="fcn-activity-filter"></select>
+        </label>
         <button type="button" id="fcn-reset-filter">Rensa filter</button>
       </div>
       <p id="fcn-filter-result" aria-live="polite"></p>
@@ -121,12 +133,17 @@
 
     const venueSelect = toolbar.querySelector("#fcn-venue-filter");
     const pitchSelect = toolbar.querySelector("#fcn-pitch-filter");
+    const activitySelect = toolbar.querySelector("#fcn-activity-filter");
     const resetButton = toolbar.querySelector("#fcn-reset-filter");
     const result = toolbar.querySelector("#fcn-filter-result");
 
     venueSelect.append(createOption("", "Alla anläggningar"));
     VENUES.forEach((venue) => venueSelect.append(createOption(venue)));
     venueSelect.value = VENUES.includes(previousVenue) ? previousVenue : "";
+
+    activitySelect.append(createOption("", "Alla aktivitetstyper"));
+    ACTIVITY_TYPES.forEach((activityType) => activitySelect.append(createOption(activityType)));
+    activitySelect.value = ACTIVITY_TYPES.includes(previousActivity) ? previousActivity : "";
 
     function updatePitchOptions() {
       const selectedVenue = venueSelect.value;
@@ -146,7 +163,8 @@
     function applyFilter() {
       const selectedVenue = venueSelect.value;
       const selectedPitch = pitchSelect.value;
-      const active = selectedVenue || selectedPitch;
+      const selectedActivity = activitySelect.value;
+      const active = selectedVenue || selectedPitch || selectedActivity;
       let visibleCount = 0;
 
       allEventRows.forEach((row) => {
@@ -155,6 +173,7 @@
           event
           && (!selectedVenue || event.venue === selectedVenue)
           && (!selectedPitch || event.pitch === selectedPitch)
+          && (!selectedActivity || event.activityType === selectedActivity)
         );
         row.classList.toggle("fcn-hidden-by-filter", !visible);
         row.hidden = !visible;
@@ -193,8 +212,10 @@
       applyFilter();
     });
     pitchSelect.addEventListener("change", applyFilter);
+    activitySelect.addEventListener("change", applyFilter);
     resetButton.addEventListener("click", () => {
       venueSelect.value = "";
+      activitySelect.value = "";
       updatePitchOptions();
       applyFilter();
     });
