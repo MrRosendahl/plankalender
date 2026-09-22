@@ -86,7 +86,11 @@
 }
 
 #fcn-plankalender #fcn-conflict-overview { padding: 2px 0 8px; }
-#fcn-plankalender .fcn-conflict-day { margin: 0 0 22px; }
+#fcn-plankalender .fcn-conflict-day {
+  box-sizing: border-box; margin: 0 0 22px; border-left: 5px solid #59636e;
+  background: transparent;
+}
+#fcn-plankalender .fcn-conflict-day:nth-of-type(even) { border-left-color: #a8b0b5; }
 #fcn-plankalender .fcn-conflict-day h3 {
   display: flex;
   justify-content: space-between;
