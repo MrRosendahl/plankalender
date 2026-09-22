@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title description">
+  <title id="title">Red and white booking calendar</title>
+  <desc id="description">A white calendar on a red rounded square with a red conflict marker.</desc>
+  <rect width="128" height="128" rx="24" fill="#c62828"/>
+  <rect x="22" y="30" width="84" height="76" rx="12" fill="#ffffff"/>
+  <path d="M22 50h84" stroke="#c62828" stroke-width="8"/>
+  <path d="M42 20v21M86 20v21" stroke="#ffffff" stroke-width="10" stroke-linecap="round"/>
+  <path d="M42 20v21M86 20v21" stroke="#c62828" stroke-width="5" stroke-linecap="round"/>
+  <g fill="#c62828">
+    <rect x="36" y="64" width="13" height="13" rx="3"/>
+    <rect x="57.5" y="64" width="13" height="13" rx="3"/>
+    <rect x="79" y="64" width="13" height="13" rx="3"/>
+    <rect x="36" y="84" width="13" height="13" rx="3"/>
+    <rect x="57.5" y="84" width="13" height="13" rx="3"/>
+  </g>
+  <circle cx="91" cy="92" r="17" fill="#c62828" stroke="#ffffff" stroke-width="4"/>
+  <path d="M91 82v12" stroke="#ffffff" stroke-width="5" stroke-linecap="round"/>
+  <circle cx="91" cy="100" r="2.8" fill="#ffffff"/>
+</svg>
