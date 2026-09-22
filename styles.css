@@ -111,7 +111,7 @@
   white-space: nowrap;
 }
 #fcn-plankalender .fcn-matrix-section {
-  margin: 0 12px 14px; border: 1px solid #cfdce2; border-radius: 8px;
+  margin: 0 0 14px; border: 1px solid #cfdce2; border-radius: 8px;
   background: #fff; overflow: hidden;
 }
 #fcn-plankalender .fcn-matrix-section h4 {
