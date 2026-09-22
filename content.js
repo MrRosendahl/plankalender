@@ -294,6 +294,20 @@
               `${formatClock(partner.start)}–${formatClock(partner.end)} · ${partner.team || partner.activityType} · ${partner.pitch}`
             ).join("; ")}`;
             item.append(conflictDetails);
+
+            const conflictsWithMatch = partners.some((partner) => partner.activityType === "Match");
+            const conflictsWithTraining = partners.some((partner) => partner.activityType === "Träning");
+            if (event.activityType === "Match" && conflictsWithTraining) {
+              const priority = document.createElement("strong");
+              priority.className = "fcn-priority-note fcn-priority-match";
+              priority.textContent = "Match har företräde";
+              item.append(priority);
+            } else if (event.activityType === "Träning" && conflictsWithMatch) {
+              const priority = document.createElement("strong");
+              priority.className = "fcn-priority-note fcn-priority-training";
+              priority.textContent = "Behöver samordnas – överlappande match har företräde";
+              item.append(priority);
+            }
           }
           if (event.hasCalculatedEnd) {
             const calculated = document.createElement("small");
@@ -355,7 +369,7 @@
         <div class="fcn-duration-inputs"></div>
       </details>
       <div id="fcn-conflict-overview"></div>
-      <p class="fcn-method-note">Krockar jämförs på samma datum och plan. Hela konstgräsplanen räknas även mot dess delplaner. Övrigt räknas bara som krock när två Övrigt-bokningar överlappar i konferensrummet. En angiven sluttid gäller alltid före standardtiden.</p>`;
+      <p class="fcn-method-note">Krockar jämförs på samma datum och plan. Vid krock mellan match och träning har matchen företräde som standard. Lagen kan därefter komma överens om annat. Hela konstgräsplanen räknas även mot dess delplaner. Övrigt räknas bara som krock när två Övrigt-bokningar överlappar i konferensrummet. En angiven sluttid gäller alltid före standardtiden.</p>`;
     calendars[0].parentElement.insertBefore(toolbar, calendars[0]);
 
     const weekSelect = toolbar.querySelector("#fcn-week-filter");

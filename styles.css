@@ -111,6 +111,12 @@
 #fcn-plankalender .fcn-event-match .fcn-event-title { font-weight: 700; }
 #fcn-plankalender .fcn-conflict-group small { grid-column: 3; margin-top: -6px; color: #75848b; font-size: 10px; }
 #fcn-plankalender .fcn-conflict-group .fcn-conflict-details { margin-top: 0; color: #9b3029; font-weight: 700; }
+#fcn-plankalender .fcn-priority-note {
+  grid-column: 3; width: fit-content; padding: 4px 8px; border-radius: 4px;
+  font-size: 10px; line-height: 1.35;
+}
+#fcn-plankalender .fcn-priority-match { background: #dff3e6; color: #23643b; }
+#fcn-plankalender .fcn-priority-training { background: #fff0cc; color: #7a5200; }
 #fcn-plankalender .fcn-type { width: fit-content; padding: 3px 7px; border-radius: 999px; font-size: 10px; font-weight: 700; }
 #fcn-plankalender .fcn-type-match { background: #dcecf8; color: #235d82; }
 #fcn-plankalender .fcn-type-traning { background: #e4f1e8; color: #2f6742; }
@@ -127,5 +133,7 @@
   #fcn-plankalender label, #fcn-plankalender select, #fcn-plankalender .fcn-secondary-button { width: 100%; }
   #fcn-plankalender .fcn-conflict-group header { display: grid; }
   #fcn-plankalender .fcn-conflict-group li { grid-template-columns: 1fr auto; }
-  #fcn-plankalender .fcn-event-title, #fcn-plankalender .fcn-conflict-group small { grid-column: 1 / -1; white-space: normal; }
+  #fcn-plankalender .fcn-event-title,
+  #fcn-plankalender .fcn-conflict-group small,
+  #fcn-plankalender .fcn-priority-note { grid-column: 1 / -1; white-space: normal; }
 }

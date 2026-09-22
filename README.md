@@ -11,12 +11,14 @@ En lokal Chrome/Edge-extension som kompletterar FC Norrskens kalender med filter
 - Visar alla bokningar som en kompakt lista grupperad per dag, anläggning och plan. Veckonumret visas till höger på veckans första dag.
 - Markerar krockande grupper och bokningar med rött.
 - Visar vilken tid, vilket lag och vilken plan varje krockande bokning överlappar.
+- Markerar att match har företräde som föreningens standard vid krock mellan match och träning, samt att träningen behöver samordnas.
 - Jämför matcher, träningar och övriga bokningar med angivna start- och sluttider.
 - Räknar som standard en match utan sluttid som två timmar.
 - Låter användaren ändra standardtiden för 3v3, 5v5, 7v7, 9v9 och 11v11. Inställningarna sparas lokalt i webbläsaren.
 - Markerar även de berörda raderna i den vanliga kalendern.
 
 Krockkontrollen kräver samma datum och anläggning, överlappande tider och samma plan. En bokning av hela konstgräsplanen jämförs också med dess delplaner. Om kalendern anger en sluttid används den alltid i stället för den konfigurerade standardtiden.
+Vid krock mellan match och träning visas matchen som prioriterad. Träningen markeras som att den behöver samordnas. Informationen är vägledande; lagen kan komma överens om annat.
 Aktiviteter utan en känd anläggning visas och kan filtreras fram, men räknas inte som plankrockar.
 Aktivitetstypen Övrigt krockar inte med matcher eller träningar. Två Övrigt-bokningar kan endast krocka när båda gäller konferensrummet på samma anläggning och deras tider överlappar. Övriga Övrigt-aktiviteter undantas från krockkontrollen.
 
