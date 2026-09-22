@@ -17,6 +17,8 @@ The extension stores only the following preferences in the browser's local stora
 
 These preferences remain on the user's device unless the user clears the website's stored data.
 
+Users can remove these preferences through their browser's controls for deleting site data for `www.fcnorrsken.se`, or by uninstalling the extension and clearing that site data. The extension has no developer-held account or server-side copy from which data needs to be requested or deleted.
+
 ## Data collection and sharing
 
 The extension does not collect, transmit, sell, or share personal information or calendar information. It does not use analytics, advertising, tracking, remote code, or external APIs. No data is sent to the developer or any third party by the extension.
@@ -25,7 +27,7 @@ The FC Norrsken website and SportAdmin remain responsible for their own processi
 
 ## Permissions and site access
 
-The extension is limited to FC Norrsken calendar pages under `https://www.fcnorrsken.se/kalender/`. This access is required to read and enhance the calendar shown on those pages. The extension requests no optional Chrome API permissions.
+The extension is limited to FC Norrsken calendar pages under `https://www.fcnorrsken.se/kalender/`. This access is required to read and enhance the calendar shown on those pages. The extension requests no optional browser-extension API permissions.
 
 ## Changes to this policy
 

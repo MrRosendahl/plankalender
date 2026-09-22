@@ -1,6 +1,6 @@
-# Chrome Web Store Privacy Disclosures
+# Chrome Web Store and Microsoft Edge Privacy Disclosures
 
-Use these answers in the **Privacy practices** tab of the Chrome Web Store Developer Dashboard. Re-check them against the code before every release.
+Use these answers in Chrome Web Store's **Privacy practices** tab and Microsoft Edge Partner Center's **Privacy** page. Re-check them against the code before every release.
 
 ## Single purpose
 
@@ -20,7 +20,7 @@ Justification: all executable JavaScript and CSS are included in the extension p
 
 ## Data usage
 
-Based on version 0.9.18, the extension does not collect or transmit user data. Calendar content is read and transformed locally in the browser and is not sent to the developer or third parties.
+Based on version 0.9.20, the extension accesses calendar content already displayed on the target page and transforms it locally in the browser. It does not collect or transmit that content or other user data to the developer or third parties.
 
 Do not select data-collection categories unless the implementation changes before submission. Complete the required limited-use certifications accurately.
 
@@ -30,8 +30,10 @@ The extension stores the selected calendar view and configured match-duration de
 
 ## Privacy policy
 
-Public URL after this repository update is published:
+Verified public URL:
 
 https://github.com/MrRosendahl/plankalender/blob/master/PRIVACY.md
 
-If the code later adds analytics, network requests, authentication, advertising, or any collection or transmission of data, update both the dashboard disclosures and `PRIVACY.md` before publishing that version.
+The URL and support page were publicly reachable during verification on September 22, 2026.
+
+If the code later adds analytics, network requests, authentication, advertising, or any collection or transmission of data, update both store disclosures and `PRIVACY.md` before publishing that version.

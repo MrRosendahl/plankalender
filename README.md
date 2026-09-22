@@ -46,18 +46,18 @@ Aktivitetstypen Övrigt ingår i krockkontrollen när aktiviteten har en angiven
 
 Efter kodändringar: klicka på omladdningsknappen för extensionen på extensionsidan och ladda sedan om kalenderfliken.
 
-## Publicering i Chrome Web Store
+## Publicering i Chrome Web Store och Microsoft Edge Add-ons
 
 Dokumentation för publicering finns i följande filer:
 
 - `PRIVACY.md` – offentlig integritetspolicy på engelska.
-- `STORE_LISTING.md` – färdig text och metadata för butikssidan.
-- `PRIVACY_DISCLOSURES.md` – föreslagna svar för fliken Privacy practices.
-- `TEST_INSTRUCTIONS.md` – instruktioner till Chrome Web Stores granskare.
+- `STORE_LISTING.md` – färdig text och metadata för båda butikssidorna.
+- `PRIVACY_DISCLOSURES.md` – verifierade svar för butikernas integritetsformulär.
+- `TEST_INSTRUCTIONS.md` – instruktioner till Chrome- och Edge-granskare.
 - `PUBLISHING_CHECKLIST.md` – stegvis kontrollista inför publicering.
 - `CHANGELOG.md` – versionshistorik.
 
-En egen rödvit kalenderikon finns i `icons/` och är registrerad i manifestet. Innan publicering måste fortfarande skärmbilder av den faktiska extensionen tas. Se `PUBLISHING_CHECKLIST.md` för krav och återstående steg.
+En egen rödvit kalenderikon finns i `icons/` och är registrerad i manifestet. Koden, manifestet, ikonerna och de publika länkarna verifierades den 22 september 2026. Innan publicering måste tillägget fortfarande funktionstestas manuellt i aktuell Chrome och Edge, butiksgrafik skapas och respektive butiksformulär skickas in. Se `PUBLISHING_CHECKLIST.md` för verifierade och återstående steg.
 
 ## Begränsning
 

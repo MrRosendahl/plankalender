@@ -2,6 +2,19 @@
 
 All notable changes to FC Norrsken Bokningskalender are documented here.
 
+## 0.9.20 — 2026-09-22
+
+- Fixed the Manifest V3 match pattern for the web-accessible toolbar icon so the unpacked extension loads in Chrome and Edge.
+- Kept script execution restricted to FC Norrsken calendar pages; the broader resource match only permits the packaged icon to be displayed on the same website.
+
+## 0.9.19 — 2026-09-22
+
+- Verified the Manifest V3 package, JavaScript syntax, icon dimensions, public URLs, permissions, and privacy behavior.
+- Smoke-tested calendar rendering, filters, booking details, conflict status, and view switching against the production page.
+- Escaped dynamic calendar text and restricted generated event links to same-origin HTTPS URLs.
+- Expanded publishing documentation for Microsoft Edge Add-ons.
+- Clarified store-specific graphic assets, certification instructions, privacy controls, and remaining manual release steps.
+
 ## 0.9.18 — 2026-09-22
 
 - Added English source-code documentation.

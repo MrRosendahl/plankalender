@@ -1,6 +1,6 @@
-# Chrome Web Store Listing
+# Chrome Web Store and Microsoft Edge Add-ons Listing
 
-Use this document as the source for the Chrome Web Store Developer Dashboard fields. The listing language should be **Swedish** because the extension and its intended audience are Swedish.
+Use this document as the source for Chrome Web Store and Microsoft Edge Partner Center fields. The listing language should be **Swedish** because the extension and its intended audience are Swedish.
 
 ## Product details
 
@@ -31,7 +31,7 @@ Funktioner:
 
 Tillägget fungerar endast på FC Norrskens kalender med kalender-ID 370929. All bearbetning sker lokalt i webbläsaren. Tillägget skickar inte kalenderuppgifter eller personuppgifter till utvecklaren eller tredje part.
 
-Detta är ett fristående hjälpmedel för kalenderpresentation. SportAdmin ansvarar för kalenderns ursprungliga innehåll och tillgänglighet.
+Detta är ett fristående hjälpmedel för kalenderpresentation och är inte en officiell SportAdmin-produkt. SportAdmin ansvarar för kalenderns ursprungliga innehåll och tillgänglighet.
 
 ### Category
 
@@ -43,12 +43,22 @@ Swedish (`sv`)
 
 ## Graphic assets
 
-Create and upload these assets before submission:
+### Chrome Web Store
+
+Create and upload these assets before Chrome submission:
 
 - Store icon: PNG, exactly 128 × 128 pixels.
 - Screenshot: PNG or JPEG, exactly 1280 × 800 pixels; at least one is required and up to five may be uploaded.
 - Small promotional tile: PNG or JPEG, exactly 440 × 280 pixels.
 - Marquee promotional tile: PNG or JPEG, exactly 1400 × 560 pixels; optional.
+- YouTube promotional video: optional.
+
+### Microsoft Edge Add-ons
+
+- Extension logo: required for each listing language; 1:1 aspect ratio, at least 128 × 128 pixels, with 300 × 300 recommended. The existing `icons/icon128.png` meets the minimum.
+- Screenshots: optional; up to six PNG or JPEG images at 1280 × 800 or 640 × 480 pixels.
+- Small promotional tile: optional, exactly 440 × 280 pixels.
+- Large promotional tile: optional PNG, exactly 1400 × 560 pixels.
 - YouTube promotional video: optional.
 
 Screenshots must show the extension's actual user experience and must not expose information that should remain private.
@@ -76,3 +86,17 @@ Recommended settings for this specialized extension:
 - Geographic distribution: Sweden, unless the extension should be available globally.
 - Mature content: No.
 - Payments: None.
+
+For Microsoft Edge Add-ons, choose the corresponding **Public** or **Hidden** visibility and select Sweden under markets unless broader availability is intended.
+
+## Microsoft Edge search terms
+
+Optional suggestions (maximum seven terms in Partner Center):
+
+- bokningskalender
+- fotboll
+- planbokning
+- kalender
+- bokningskrockar
+- FC Norrsken
+- SportAdmin

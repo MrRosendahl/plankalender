@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "FC Norrsken Bokningskalender",
   "short_name": "Bokningskalender",
-  "version": "0.9.18",
+  "version": "0.9.20",
   "description": "Visar FC Norrskens bokningar i en tidsmatris och upptäcker krockar mellan bokningsytor.",
   "author": "Michael Rosendahl",
   "homepage_url": "https://github.com/MrRosendahl/plankalender",

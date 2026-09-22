@@ -43,6 +43,17 @@
     .replace(/undefined/gi, "")
     .replace(/\s+/g, " ")
     .trim();
+  const escapeHtml = (value) => String(value ?? "").replace(/[&<>"]/g, (character) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;"
+  })[character]);
+  const safeEventUrl = (value) => {
+    try {
+      const url = new URL(value, window.location.href);
+      return url.protocol === "https:" && url.origin === window.location.origin ? url.href : "";
+    } catch {
+      return "";
+    }
+  };
   const normalizePitch = (value) => normalize(value).toLocaleLowerCase("sv-SE");
   const canonicalizePitch = (value) => normalizePitch(value) === "konstgräs"
     ? "Konstgräs Hela"
@@ -448,28 +459,29 @@
     }
 
     const calculatedText = event.hasCalculatedEnd
-      ? `<p class="fcn-dialog-note">* Sluttiden är beräknad utifrån standardtiden för ${event.gameFormat}.</p>` : "";
+      ? `<p class="fcn-dialog-note">* Sluttiden är beräknad utifrån standardtiden för ${escapeHtml(event.gameFormat)}.</p>` : "";
     const conflictText = partners.length
       ? `<section class="fcn-dialog-conflicts"><strong>⚠ Krockar med</strong><div>${partners.map((partner) => `
         <article class="fcn-dialog-conflict">
-          <span>${partner.activityType}</span>
-          <h4>${shortTeamName(partner.team)}</h4>
+          <span>${escapeHtml(partner.activityType)}</span>
+          <h4>${escapeHtml(shortTeamName(partner.team))}</h4>
           <dl>
             <div><dt>Tid</dt><dd>${formatClock(partner.start)}–${formatClock(partner.end)}</dd></div>
-            <div><dt>Plats</dt><dd>${partner.venue} · ${partner.pitch}</dd></div>
-            <div><dt>Aktivitet</dt><dd>${partner.text}</dd></div>
+            <div><dt>Plats</dt><dd>${escapeHtml(partner.venue)} · ${escapeHtml(partner.pitch)}</dd></div>
+            <div><dt>Aktivitet</dt><dd>${escapeHtml(partner.text)}</dd></div>
           </dl>
-          ${partner.href ? `<a href="${partner.href}">Öppna kalenderhändelsen</a>` : ""}
+          ${safeEventUrl(partner.href) ? `<a href="${escapeHtml(safeEventUrl(partner.href))}">Öppna kalenderhändelsen</a>` : ""}
         </article>`).join("")}</div></section>` : "";
-    const link = event.href ? `<a href="${event.href}">Öppna kalenderhändelsen</a>` : "";
+    const eventUrl = safeEventUrl(event.href);
+    const link = eventUrl ? `<a href="${escapeHtml(eventUrl)}">Öppna kalenderhändelsen</a>` : "";
     dialog.innerHTML = `
       <button type="button" class="fcn-dialog-close" aria-label="Stäng">×</button>
-      <span class="fcn-dialog-type">${event.activityType}</span>
-      <h3>${shortTeamName(event.team)}</h3>
+      <span class="fcn-dialog-type">${escapeHtml(event.activityType)}</span>
+      <h3>${escapeHtml(shortTeamName(event.team))}</h3>
       <dl>
         <div><dt>Tid</dt><dd>${formatClock(event.start)}${event.end === null ? "" : `–${formatClock(event.end)}`} ${event.hasCalculatedEnd ? "*" : ""}</dd></div>
-        <div><dt>Plats</dt><dd>${event.venue} · ${event.pitch}</dd></div>
-        <div><dt>Aktivitet</dt><dd>${event.text}</dd></div>
+        <div><dt>Plats</dt><dd>${escapeHtml(event.venue)} · ${escapeHtml(event.pitch)}</dd></div>
+        <div><dt>Aktivitet</dt><dd>${escapeHtml(event.text)}</dd></div>
       </dl>
       ${calculatedText}${conflictText}${link}`;
     dialog.querySelector(".fcn-dialog-close").addEventListener("click", () => dialog.close());
@@ -503,7 +515,7 @@
       const section = document.createElement("section");
       section.className = "fcn-conflict-day";
       const heading = document.createElement("h3");
-      heading.innerHTML = `<span>${dayEvents[0].day} ${dayEvents[0].weekday}</span>${week !== currentWeek && week ? `<small>Vecka ${week}</small>` : ""}`;
+      heading.innerHTML = `<span>${escapeHtml(dayEvents[0].day)} ${escapeHtml(dayEvents[0].weekday)}</span>${week !== currentWeek && week ? `<small>Vecka ${escapeHtml(week)}</small>` : ""}`;
       currentWeek = week;
       section.append(heading);
 

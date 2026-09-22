@@ -1,10 +1,10 @@
-# Chrome Web Store Review Instructions
+# Chrome Web Store and Microsoft Edge Certification Instructions
 
 ## Preconditions
 
 - No account, payment, or test credentials are required.
 - Internet access to FC Norrsken's public calendar is required.
-- Test with the latest stable version of Google Chrome.
+- Test with the latest stable version of Google Chrome or Microsoft Edge, according to the target store.
 
 ## Test page
 
@@ -25,6 +25,7 @@ If the selected month contains no bookings, navigate to a month that contains ca
 7. Select **Avancerad** and confirm that the enhanced view returns.
 8. Expand **Matchtider**, change a duration, reload the page, and confirm that the setting is retained locally.
 9. If overlapping reservations exist in the selected period, confirm that the conflict count and red conflict group are displayed and that every booking remains selectable.
+10. Open the browser developer console and confirm that the extension produces no errors during the preceding flow.
 
 ## Scope checks
 
@@ -34,3 +35,7 @@ If the selected month contains no bookings, navigate to a month that contains ca
 ## Expected data behavior
 
 The extension reads calendar text already present on the test page and processes it locally. It stores only calendar-view and match-duration preferences in local storage. It does not transmit calendar or user data.
+
+## Certification note
+
+The extension is intentionally limited to one public FC Norrsken calendar. No login or special hardware is required. It is a Chromium Manifest V3 extension and uses the same package and behavior in Chrome and Edge.
