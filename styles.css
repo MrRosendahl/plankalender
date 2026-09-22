@@ -177,9 +177,15 @@
 }
 #fcn-plankalender .fcn-matrix-event.fcn-event-traning { border-color: #85ae93; border-left-color: #3e7c53; background: #e4f1e8; color: #245537; }
 #fcn-plankalender .fcn-matrix-event.fcn-event-ovrigt { border-color: #a696b9; border-left-color: #72568d; background: #eee9f5; color: #513c68; }
+#fcn-plankalender .fcn-matrix-event.fcn-event-calculated,
+#fcn-plankalender .fcn-conflict-entry.fcn-event-calculated {
+  border-right: 4px dashed currentColor;
+}
+#fcn-plankalender .fcn-calculated-time { font-style: italic; }
 #fcn-plankalender .fcn-matrix-event.fcn-list-event-conflict {
   border: 2px solid #c7382f; border-left-width: 5px; opacity: 0.72;
 }
+#fcn-plankalender .fcn-matrix-event.fcn-list-event-conflict.fcn-event-calculated { border-right: 4px dashed currentColor; }
 #fcn-plankalender .fcn-matrix-event.fcn-list-event-conflict:hover,
 #fcn-plankalender .fcn-matrix-event.fcn-list-event-conflict:focus-visible { opacity: 0.96; }
 

@@ -6,8 +6,15 @@
   const UNKNOWN_VENUE = "Utan anläggning";
   const UNKNOWN_PITCH = "Ingen bokningsyta angiven";
   const ACTIVITY_TYPES = ["Match", "Träning", "Övrigt"];
-  const GAME_FORMATS = ["3v3", "5v5", "7v7", "9v9", "11v11"];
-  const DEFAULT_MATCH_MINUTES = Object.fromEntries(GAME_FORMATS.map((format) => [format, 120]));
+  const GAME_FORMATS = ["3v3", "5v5", "7v7", "9v9", "11v11 (15 år)", "11v11 (16+ år)"];
+  const DEFAULT_MATCH_MINUTES = {
+    "3v3": 20,
+    "5v5": 55,
+    "7v7": 70,
+    "9v9": 85,
+    "11v11 (15 år)": 95,
+    "11v11 (16+ år)": 105
+  };
   const MATCH_DURATION_KEY = "fcn-match-duration-by-format";
   const CALENDAR_VIEW_KEY = "fcn-calendar-view";
   const TOOLBAR_ID = "fcn-plankalender";
@@ -94,18 +101,19 @@
 
   function inferGameFormat(team, text) {
     const stated = text.match(/\b(3|5|7|9|11)\s*(?:v|mot)\s*\1\b/i)?.[1];
-    if (stated) return `${stated}v${stated}`;
     const pitch = text.match(/\b(3|5|7|9|11)v\1\b/i)?.[1];
-    if (pitch) return `${pitch}v${pitch}`;
+    const explicitFormat = stated ?? pitch;
+    if (explicitFormat && explicitFormat !== "11") return `${explicitFormat}v${explicitFormat}`;
 
     const birthYear = team.match(/\b(?:F|P)\s*(\d{2})\b/i)?.[1];
-    if (!birthYear) return "11v11";
+    if (!birthYear) return "11v11 (16+ år)";
     const age = new Date().getFullYear() - (2000 + Number(birthYear));
+    if (explicitFormat === "11") return age === 15 ? "11v11 (15 år)" : "11v11 (16+ år)";
     if (age <= 7) return "3v3";
     if (age <= 9) return "5v5";
     if (age <= 12) return "7v7";
     if (age <= 14) return "9v9";
-    return "11v11";
+    return age === 15 ? "11v11 (15 år)" : "11v11 (16+ år)";
   }
 
   function parseEvent(row, dayRow, week, matchDurations) {
@@ -551,8 +559,9 @@
           const wholePitchClass = isWholeArtificialPitch(event.pitch) ? " fcn-event-whole-pitch" : "";
           const renderedHeight = Math.max(28, ((event.end ?? event.start + 30) - event.start) * 1.2);
           const compactClass = renderedHeight < 38 ? " fcn-event-compact" : "";
+          const calculatedClass = event.hasCalculatedEnd ? " fcn-event-calculated" : "";
           button.type = "button";
-          button.className = `fcn-matrix-event fcn-event-${typeClass}${wholePitchClass}${compactClass}${partners.length ? " fcn-list-event-conflict" : ""}`;
+          button.className = `fcn-matrix-event fcn-event-${typeClass}${wholePitchClass}${compactClass}${calculatedClass}${partners.length ? " fcn-list-event-conflict" : ""}`;
           button.style.top = `${(event.start - firstMinute) * 1.2}px`;
           button.style.height = `${renderedHeight}px`;
           button.style.left = `calc(${columnStart / columns.length * 100 + lane * laneWidth}% + 2px)`;
@@ -562,7 +571,10 @@
             .filter(Boolean)
             .join(" · ");
           eventHeading.textContent = eventHeading.dataset.fullHeading;
-          eventMeta.textContent = `${formatClock(event.start)}–${formatClock(event.end ?? event.start + 30)}${event.hasCalculatedEnd ? "*" : ""} · ${event.activityType.charAt(0)}${partners.length ? " · ⚠" : ""}`;
+          const eventTime = document.createElement("time");
+          eventTime.textContent = `${formatClock(event.start)}–${formatClock(event.end ?? event.start + 30)}${event.hasCalculatedEnd ? "*" : ""}`;
+          if (event.hasCalculatedEnd) eventTime.className = "fcn-calculated-time";
+          eventMeta.append(eventTime, ` · ${event.activityType.charAt(0)}${partners.length ? " · ⚠" : ""}`);
           button.append(eventHeading, eventMeta);
           button.addEventListener("click", () => openEventDetails(event, partners));
           canvas.append(button);
@@ -600,13 +612,16 @@
               const partners = conflictPartners.get(event) ?? [];
               const { range: [pitchStart, pitchEnd], row } = conflictEntryRows.get(event);
               entry.type = "button";
-              entry.className = `fcn-conflict-entry fcn-event-${typeClass}`;
+              entry.className = `fcn-conflict-entry fcn-event-${typeClass}${event.hasCalculatedEnd ? " fcn-event-calculated" : ""}`;
               entry.style.gridColumn = `${pitchStart + 1} / ${pitchEnd + 1}`;
               entry.style.gridRow = String(row);
               entry.title = `${event.team} · ${event.text}`;
               entryHeading.dataset.fullHeading = [shortTeamName(event.team), additionalEventInfo(event)].filter(Boolean).join(" · ");
               entryHeading.textContent = entryHeading.dataset.fullHeading;
-              entryMeta.textContent = `${formatClock(event.start)}–${formatClock(event.end ?? event.start + 30)} · ${event.pitch}`;
+              const entryTime = document.createElement("time");
+              entryTime.textContent = `${formatClock(event.start)}–${formatClock(event.end ?? event.start + 30)}${event.hasCalculatedEnd ? "*" : ""}`;
+              if (event.hasCalculatedEnd) entryTime.className = "fcn-calculated-time";
+              entryMeta.append(entryTime, ` · ${event.pitch}`);
               entry.append(entryHeading, entryMeta);
               entry.addEventListener("click", () => openEventDetails(event, partners));
               conflictEntries.append(entry);
@@ -800,7 +815,7 @@
       renderScheduleOverview(overview, filtered, !venueSelect.value);
     }
 
-    function setCalendarView(view) {
+    function setCalendarView(view, persist = false) {
       const showOriginal = view === "original";
       calendars.forEach((calendar) => {
         const wrapper = calendar.matches(MODERN_CALENDAR_SELECTOR) ? calendar : calendar.closest("#calWrap");
@@ -826,7 +841,7 @@
       } else {
         applyFilter();
       }
-      localStorage.setItem(CALENDAR_VIEW_KEY, view);
+      if (persist) localStorage.setItem(CALENDAR_VIEW_KEY, view);
     }
 
     sectionSelect.addEventListener("change", () => { updatePitchOptions(); applyFilter(); });
@@ -855,14 +870,15 @@
     });
     viewSwitch.addEventListener("click", (event) => {
       const button = event.target.closest("button[data-view]");
-      if (button) setCalendarView(button.dataset.view);
+      if (button) setCalendarView(button.dataset.view, true);
     });
 
     updatePitchOptions();
     if ([...pitchSelect.options].some((option) => option.value === previousPitch)) {
       pitchSelect.value = previousPitch;
     }
-    setCalendarView(localStorage.getItem(CALENDAR_VIEW_KEY) === "original" ? "original" : "advanced");
+    const savedCalendarView = localStorage.getItem(CALENDAR_VIEW_KEY);
+    setCalendarView(savedCalendarView === "original" ? "original" : "advanced");
     return true;
   }
 

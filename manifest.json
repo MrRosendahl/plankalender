@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "FC Norrsken Bokningskalender",
-  "version": "0.9.12",
+  "version": "0.9.17",
   "description": "Visar bokningar i en tidsmatris och hittar krockar mellan bokningsytor.",
   "content_scripts": [
     {

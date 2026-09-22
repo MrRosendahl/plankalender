@@ -11,7 +11,7 @@ En lokal Chrome/Edge-extension som kompletterar FC Norrskens kalender med filter
 - Visar hela månaden som standard men låter användaren begränsa listan till en enskild vecka.
 - Visar bokningarna i en tidsmatris per dag och anläggning, med tid lodrätt och bokningsytor som kolumner.
 - Lägger till lite utrymme efter den sista bokningen när den når tidslinjens nederkant, så att sluttiden förblir läsbar. Kortare bokningar som redan ryms förstorar inte vyn i onödan.
-- Låter användaren växla mellan den avancerade bokningskalendern och SportAdmins originalkalender. Valet sparas lokalt.
+- Visar den avancerade bokningskalendern som standard och låter användaren växla till SportAdmins originalkalender. Ett eget val sparas lokalt och används vid kommande besök.
 - Visar SportAdmins ursprungliga val för sektion och aktivitetstyp endast i originalkalendern.
 - Visar hela konstgräsplanen som ett sammanhängande block över dess delplaner.
 - Normaliserar plannamnet `Konstgräs` till `Konstgräs Hela` i all visning och krockkontroll.
@@ -26,8 +26,9 @@ En lokal Chrome/Edge-extension som kompletterar FC Norrskens kalender med filter
 - Visar vilken tid, vilket lag och vilken plan varje krockande bokning överlappar.
 - Markerar att match har företräde som föreningens standard vid krock mellan match och träning, samt att träningen behöver samordnas.
 - Jämför matcher, träningar och övriga bokningar med angivna start- och sluttider.
-- Räknar som standard en match utan sluttid som två timmar.
-- Låter användaren ändra standardtiden för 3v3, 5v5, 7v7, 9v9 och 11v11. Inställningarna sparas lokalt i webbläsaren.
+- Räknar en match utan sluttid enligt spelformens totala standardtid inklusive pauser: 3v3 20 minuter, 5v5 55 minuter, 7v7 70 minuter, 9v9 85 minuter, 11v11 för 15-årslag 95 minuter och 11v11 för 16+ 105 minuter.
+- Väljer 11v11-tid utifrån lagets födelseår. Seniorlag och lag där åldern inte kan utläsas använder 16+-tiden.
+- Låter användaren ändra standardtiden för varje spelform. Inställningarna sparas lokalt i webbläsaren.
 - Markerar även de berörda raderna i den vanliga kalendern.
 
 Krockkontrollen kräver samma datum och anläggning, överlappande tider och samma bokningsyta. En bokning av hela konstgräsplanen jämförs också med dess delplaner. Om kalendern anger en sluttid används den alltid i stället för den konfigurerade standardtiden.
