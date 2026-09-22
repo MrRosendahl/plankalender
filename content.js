@@ -707,7 +707,10 @@
     toolbar.setAttribute("aria-label", "Grupperad bokningskalender med krockar");
     toolbar.innerHTML = `
       <div class="fcn-filter-heading">
-        <div><strong>Bokningskalender</strong><span>Tid visas lodrätt och bokningsytor som kolumner. Klicka på en bokning för detaljer.</span></div>
+        <div>
+          <div class="fcn-filter-title"><img src="${chrome.runtime.getURL("icons/icon32.png")}" alt="" aria-hidden="true"><strong>Bokningskalender</strong></div>
+          <span>Tid visas lodrätt och bokningsytor som kolumner. Klicka på en bokning för detaljer.</span>
+        </div>
         <output id="fcn-conflict-count" aria-live="polite"></output>
       </div>
       <div class="fcn-filter-controls">
