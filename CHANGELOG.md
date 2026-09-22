@@ -6,7 +6,8 @@ All notable changes to FC Norrsken Bokningskalender are documented here.
 
 - Fixed the Manifest V3 match pattern for the web-accessible toolbar icon so the unpacked extension loads in Chrome and Edge.
 - Kept script execution restricted to FC Norrsken calendar pages; the broader resource match only permits the packaged icon to be displayed on the same website.
-- Confirmed successful unpacked installation and operation against the production calendar in developer mode.
+- Confirmed successful unpacked installation and operation against the production calendar in Vivaldi 8.2.4133.68 (official 64-bit build) developer mode.
+- Confirmed successful unpacked installation and operation in Google Chrome 153.0.8010.53 and Microsoft Edge 153.0.4234.48, both official 64-bit builds.
 
 ## 0.9.19 — 2026-09-22
 
