@@ -265,12 +265,13 @@
         const header = document.createElement("header");
         const title = document.createElement("strong");
         title.textContent = `${pitchEvents[0].venue} · ${pitchEvents[0].pitch}`;
-        const status = document.createElement("span");
         const conflictCount = pitchEvents.filter((event) => conflictingEvents.has(event)).length;
-        status.textContent = hasConflict
-          ? `${conflictCount} krockande ${conflictCount === 1 ? "bokning" : "bokningar"}`
-          : `${pitchEvents.length} ${pitchEvents.length === 1 ? "bokning" : "bokningar"}`;
-        header.append(title, status);
+        header.append(title);
+        if (hasConflict) {
+          const status = document.createElement("span");
+          status.textContent = `${conflictCount} krockande ${conflictCount === 1 ? "bokning" : "bokningar"}`;
+          header.append(status);
+        }
         group.append(header);
 
         const list = document.createElement("ul");
@@ -441,8 +442,9 @@
       });
 
       const groups = findConflictGroups(filtered);
-      const bookingCount = filtered.length;
-      count.textContent = `${groups.length} ${groups.length === 1 ? "krock" : "krockar"} · ${bookingCount} bokningar`;
+      count.textContent = groups.length
+        ? `${groups.length} ${groups.length === 1 ? "krock" : "krockar"}`
+        : "Inga krockar";
       count.classList.toggle("fcn-count-clear", groups.length === 0);
       renderScheduleOverview(overview, filtered);
     }

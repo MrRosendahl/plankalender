@@ -67,15 +67,16 @@
 #fcn-plankalender .fcn-conflict-day h3 {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
+  align-items: center;
   gap: 12px;
-  margin: 0 0 10px;
-  padding: 10px 12px;
+  margin: 0 0 6px;
+  padding: 5px 12px;
   border-top: 1px solid #b8cad4;
   border-bottom: 1px solid #b8cad4;
   background: #dce8ee;
   color: #193f55;
-  font-size: 14px;
+  font-size: 13px;
+  line-height: 1.2;
   letter-spacing: 0.03em;
   text-transform: uppercase;
 }
