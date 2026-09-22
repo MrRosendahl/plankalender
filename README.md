@@ -13,6 +13,7 @@ En lokal Chrome/Edge-extension som kompletterar FC Norrskens kalender med filter
 - Låter användaren växla mellan den avancerade plankalendern och SportAdmins originalkalender. Valet sparas lokalt.
 - Visar SportAdmins ursprungliga val för sektion och aktivitetstyp endast i originalkalendern.
 - Visar hela konstgräsplanen som ett sammanhängande block över dess delplaner.
+- Normaliserar plannamnet `Konstgräs` till `Konstgräs Hela` i all visning och krockkontroll.
 - Samlar överlappande bokningar i ett gemensamt krockblock där varje bokning alltid är synlig och valbar.
 - Färgsätter varje post i krockblocket efter aktivitetstyp och visar tid samt plan direkt.
 - Delar krockblocket i fyra virtuella plandelar: 1/4 A–D tar en del, Halvplan 1–2 tar två delar och Hela tar samtliga fyra.
@@ -30,7 +31,7 @@ En lokal Chrome/Edge-extension som kompletterar FC Norrskens kalender med filter
 Krockkontrollen kräver samma datum och anläggning, överlappande tider och samma plan. En bokning av hela konstgräsplanen jämförs också med dess delplaner. Om kalendern anger en sluttid används den alltid i stället för den konfigurerade standardtiden.
 Vid krock mellan match och träning visas matchen som prioriterad. Träningen markeras som att den behöver samordnas. Informationen är vägledande; lagen kan komma överens om annat.
 Aktiviteter utan en känd anläggning visas och kan filtreras fram, men räknas inte som plankrockar.
-Aktivitetstypen Övrigt krockar inte med matcher eller träningar. Två Övrigt-bokningar kan endast krocka när båda gäller konferensrummet på samma anläggning och deras tider överlappar. Övriga Övrigt-aktiviteter undantas från krockkontrollen.
+Aktivitetstypen Övrigt ingår i krockkontrollen när aktiviteten har en angiven plan eller bokningsyta. Den kan då krocka med matcher, träningar och andra Övrigt-bokningar på samma yta när tiderna överlappar. Aktiviteter utan angiven plan eller bokningsyta undantas från krockkontrollen.
 
 ## Installera lokalt
 

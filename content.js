@@ -26,6 +26,9 @@
     .replace(/\s+/g, " ")
     .trim();
   const normalizePitch = (value) => normalize(value).toLocaleLowerCase("sv-SE");
+  const canonicalizePitch = (value) => normalizePitch(value) === "konstgräs"
+    ? "Konstgräs Hela"
+    : normalize(value);
 
   function loadMatchDurations() {
     try {
@@ -123,7 +126,7 @@
       const gameFormat = activityType === "Match" ? inferGameFormat(team, eventText) : "";
       const end = explicitEnd ?? (activityType === "Match" && start !== null ? start + matchDurations[gameFormat] : null);
       const pitch = detectedVenue
-        ? normalize(location.replace(new RegExp(`^${detectedVenue}\\s*`, "i"))) || "Ospecificerad plan"
+        ? canonicalizePitch(location.replace(new RegExp(`^${detectedVenue}\\s*`, "i"))) || "Ospecificerad plan"
         : UNKNOWN_PITCH;
 
       return {
@@ -155,7 +158,7 @@
     if (detectedVenue) {
       const commaIndex = eventText.lastIndexOf(",");
       const location = commaIndex >= 0 ? normalize(eventText.slice(commaIndex + 1)) : eventText;
-      pitch = normalize(location
+      pitch = canonicalizePitch(location
         .replace(/\s*\([^)]*\)\s*(?:\([^)]*\)\s*)*$/, "")
         .replace(new RegExp(`^${detectedVenue}\\s*`, "i"), "")) || "Ospecificerad plan";
     }
@@ -209,13 +212,10 @@
   }
 
   function activitiesCanConflict(first, second) {
-    const firstIsOther = first.activityType === "Övrigt";
-    const secondIsOther = second.activityType === "Övrigt";
-    if (!firstIsOther && !secondIsOther) return true;
-
-    return firstIsOther && secondIsOther
-      && normalizePitch(first.pitch).includes("konferensrum")
-      && normalizePitch(second.pitch).includes("konferensrum");
+    const hasBookableArea = (event) => event.hasKnownVenue
+      && event.pitch !== UNKNOWN_PITCH
+      && normalizePitch(event.pitch) !== normalizePitch("Ospecificerad plan");
+    return hasBookableArea(first) && hasBookableArea(second);
   }
 
   function eventsOverlap(first, second) {
@@ -308,11 +308,12 @@
     return [0, 4];
   }
 
-  function getConflictEntryRows(events) {
+  function getConflictEntryRows(events, columns, groupColumnStart) {
     const rows = [];
     const layout = new Map();
     events.forEach((event) => {
-      const range = getPitchSubdivisionRange(event.pitch);
+      const [columnStart, columnEnd] = getEventColumnRange(event, columns);
+      const range = [columnStart - groupColumnStart, columnEnd - groupColumnStart];
       const end = event.end ?? event.start + 30;
       let rowIndex = rows.findIndex((row) => row.start === event.start && row.end === end
         && row.ranges.every(([start, rangeEnd]) => range[0] >= rangeEnd || start >= range[1]));
@@ -535,10 +536,12 @@
           const typeClass = event.activityType.toLocaleLowerCase("sv-SE").replace("ä", "a").replace("ö", "o");
           const partners = conflictPartners.get(event) ?? [];
           const wholePitchClass = isWholeArtificialPitch(event.pitch) ? " fcn-event-whole-pitch" : "";
+          const renderedHeight = Math.max(28, ((event.end ?? event.start + 30) - event.start) * 1.2);
+          const compactClass = renderedHeight < 38 ? " fcn-event-compact" : "";
           button.type = "button";
-          button.className = `fcn-matrix-event fcn-event-${typeClass}${wholePitchClass}${partners.length ? " fcn-list-event-conflict" : ""}`;
+          button.className = `fcn-matrix-event fcn-event-${typeClass}${wholePitchClass}${compactClass}${partners.length ? " fcn-list-event-conflict" : ""}`;
           button.style.top = `${(event.start - firstMinute) * 1.2}px`;
-          button.style.height = `${Math.max(28, ((event.end ?? event.start + 30) - event.start) * 1.2)}px`;
+          button.style.height = `${renderedHeight}px`;
           button.style.left = `calc(${columnStart / columns.length * 100 + lane * laneWidth}% + 2px)`;
           button.style.width = `calc(${laneWidth}% - 4px)`;
           button.title = `${event.team} · ${event.text}`;
@@ -554,13 +557,13 @@
 
         venueConflictGroups.forEach((group) => {
           group.sort((first, second) => first.start - second.start || shortTeamName(first.team).localeCompare(shortTeamName(second.team), "sv"));
-          const conflictEntryRows = getConflictEntryRows(group);
-          const conflictRowCount = Math.max(...[...conflictEntryRows.values()].map((item) => item.row));
           const groupStart = Math.min(...group.map((event) => event.start));
           const groupEnd = Math.max(...group.map((event) => event.end ?? event.start + 30));
           const ranges = group.map((event) => getEventColumnRange(event, columns));
           const columnStart = Math.min(...ranges.map((range) => range[0]));
           const columnEnd = Math.max(...ranges.map((range) => range[1]));
+          const conflictEntryRows = getConflictEntryRows(group, columns, columnStart);
+          const conflictRowCount = Math.max(...[...conflictEntryRows.values()].map((item) => item.row));
           const conflictBlock = document.createElement("section");
           const conflictHeading = document.createElement("strong");
           const conflictEntries = document.createElement("div");
@@ -569,6 +572,7 @@
           conflictBlock.style.height = `${(groupEnd - groupStart) * 1.2}px`;
           conflictBlock.style.left = `calc(${columnStart / columns.length * 100}% + 2px)`;
           conflictBlock.style.width = `calc(${(columnEnd - columnStart) / columns.length * 100}% - 4px)`;
+          conflictBlock.style.setProperty("--conflict-columns", columnEnd - columnStart);
           conflictBlock.style.setProperty("--conflict-rows", conflictRowCount);
           conflictHeading.textContent = `⚠ Krockgrupp · ${group.length} bokningar`;
           conflictEntries.className = "fcn-conflict-entries";
@@ -667,7 +671,7 @@
         <div class="fcn-duration-inputs"></div>
       </details>
       <div id="fcn-conflict-overview"></div>
-      <p class="fcn-method-note">Krockar jämförs på samma datum och plan. Vid krock mellan match och träning har matchen företräde som standard. Lagen kan därefter komma överens om annat. Hela konstgräsplanen räknas även mot dess delplaner. Övrigt räknas bara som krock när två Övrigt-bokningar överlappar i konferensrummet. En angiven sluttid gäller alltid före standardtiden.</p>`;
+      <p class="fcn-method-note">Krockar jämförs på samma datum och plan för matcher, träningar och övriga aktiviteter med en angiven plan eller bokningsyta. Vid krock mellan match och träning har matchen företräde som standard. Lagen kan därefter komma överens om annat. Hela konstgräsplanen räknas även mot dess delplaner. En angiven sluttid gäller alltid före standardtiden.</p>`;
 
     const viewSwitch = document.createElement("div");
     viewSwitch.id = VIEW_SWITCH_ID;
