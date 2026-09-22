@@ -9,16 +9,22 @@
   const GAME_FORMATS = ["3v3", "5v5", "7v7", "9v9", "11v11"];
   const DEFAULT_MATCH_MINUTES = Object.fromEntries(GAME_FORMATS.map((format) => [format, 120]));
   const MATCH_DURATION_KEY = "fcn-match-duration-by-format";
+  const CALENDAR_VIEW_KEY = "fcn-calendar-view";
   const TOOLBAR_ID = "fcn-plankalender";
+  const VIEW_SWITCH_ID = "fcn-calendar-view-switch";
   const LEGACY_EVENT_ROW_SELECTOR = ":scope > td:nth-child(4) > table > tbody > tr";
   const MODERN_CALENDAR_SELECTOR = ".sa-calendar";
   const MODERN_DAY_SELECTOR = ":scope > .sa-calendar__date-group";
   const MODERN_EVENT_SELECTOR = ":scope > .sa-calendar__events > .sa-calendar__event";
   let observedEventRows = [];
+  let eventHeadingObserver = null;
 
   if (new URLSearchParams(window.location.search).get("ID") !== TARGET_CALENDAR_ID) return;
 
-  const normalize = (value) => value.replace(/\s+/g, " ").trim();
+  const normalize = (value) => String(value ?? "")
+    .replace(/undefined/gi, "")
+    .replace(/\s+/g, " ")
+    .trim();
   const normalizePitch = (value) => normalize(value).toLocaleLowerCase("sv-SE");
 
   function loadMatchDurations() {
@@ -249,6 +255,88 @@
     return partners;
   }
 
+  function isWholeArtificialPitch(pitch) {
+    const normalized = normalizePitch(pitch);
+    return normalized.includes("konstgräs") && (normalized === "konstgräs" || normalized.includes("hela"));
+  }
+
+  function getMatrixColumns(events) {
+    const pitches = [...new Set(events.map((event) => event.pitch))]
+      .sort((first, second) => first.localeCompare(second, "sv"));
+    const artificialParts = pitches.filter((pitch) => normalizePitch(pitch).includes("konstgräs") && !isWholeArtificialPitch(pitch));
+    return pitches.filter((pitch) => !isWholeArtificialPitch(pitch) || artificialParts.length === 0);
+  }
+
+  function getEventColumnRange(event, columns) {
+    if (isWholeArtificialPitch(event.pitch)) {
+      const indexes = columns.map((pitch, index) => normalizePitch(pitch).includes("konstgräs") ? index : -1)
+        .filter((index) => index >= 0);
+      if (indexes.length) return [Math.min(...indexes), Math.max(...indexes) + 1];
+    }
+    const index = Math.max(0, columns.findIndex((pitch) => normalizePitch(pitch) === normalizePitch(event.pitch)));
+    return [index, index + 1];
+  }
+
+  function shortTeamName(team) {
+    const compact = normalize(team).replace(/^FC\s+Norrsken\s*/i, "");
+    return compact || "Bokning";
+  }
+
+  function additionalEventInfo(event) {
+    const knownValues = [event.team, event.activityType, event.venue, event.pitch]
+      .map(normalize)
+      .filter((value) => value && value !== UNKNOWN_VENUE && value !== UNKNOWN_PITCH)
+      .sort((first, second) => second.length - first.length);
+    const remaining = knownValues.reduce((text, value) => {
+      const escapedValue = value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      return text.replace(new RegExp(escapedValue, "gi"), " ");
+    }, event.text);
+    return normalize(remaining.replace(/^[\s,·–—:;-]+|[\s,·–—:;-]+$/g, "").replace(/\s*[,·]\s*[,·]\s*/g, " · "));
+  }
+
+  function fitEventHeadings(container) {
+    container.querySelectorAll(".fcn-matrix-event strong[data-full-heading]").forEach((heading) => {
+      const availableWidth = heading.parentElement.clientWidth - 18;
+      const characterLimit = Math.max(4, Math.floor(availableWidth / 7));
+      const fullHeading = heading.dataset.fullHeading;
+      heading.textContent = fullHeading.length > characterLimit
+        ? `${fullHeading.slice(0, characterLimit)}...`
+        : fullHeading;
+    });
+  }
+
+  function openEventDetails(event, partners) {
+    let dialog = document.getElementById("fcn-event-dialog");
+    if (!dialog) {
+      dialog = document.createElement("dialog");
+      dialog.id = "fcn-event-dialog";
+      document.body.append(dialog);
+      dialog.addEventListener("click", (clickEvent) => {
+        if (clickEvent.target === dialog) dialog.close();
+      });
+    }
+
+    const calculatedText = event.hasCalculatedEnd
+      ? `<p class="fcn-dialog-note">* Sluttiden är beräknad utifrån standardtiden för ${event.gameFormat}.</p>` : "";
+    const conflictText = partners.length
+      ? `<section class="fcn-dialog-conflicts"><strong>⚠ Krockar med</strong><ul>${partners.map((partner) =>
+        `<li>${formatClock(partner.start)}–${formatClock(partner.end)} · ${shortTeamName(partner.team)} · ${partner.pitch}</li>`
+      ).join("")}</ul></section>` : "";
+    const link = event.href ? `<a href="${event.href}">Öppna kalenderhändelsen</a>` : "";
+    dialog.innerHTML = `
+      <button type="button" class="fcn-dialog-close" aria-label="Stäng">×</button>
+      <span class="fcn-dialog-type">${event.activityType}</span>
+      <h3>${shortTeamName(event.team)}</h3>
+      <dl>
+        <div><dt>Tid</dt><dd>${formatClock(event.start)}${event.end === null ? "" : `–${formatClock(event.end)}`} ${event.hasCalculatedEnd ? "*" : ""}</dd></div>
+        <div><dt>Plats</dt><dd>${event.venue} · ${event.pitch}</dd></div>
+        <div><dt>Aktivitet</dt><dd>${event.text}</dd></div>
+      </dl>
+      ${calculatedText}${conflictText}${link}`;
+    dialog.querySelector(".fcn-dialog-close").addEventListener("click", () => dialog.close());
+    dialog.showModal();
+  }
+
   function renderScheduleOverview(container, events) {
     const conflictGroups = findConflictGroups(events);
     const conflictingEvents = new Set(conflictGroups.flat());
@@ -272,105 +360,94 @@
     let currentWeek = null;
     byDay.forEach((dayEvents) => {
       const week = dayEvents[0].week;
-      const isFirstDayOfWeek = week !== currentWeek;
-      if (isFirstDayOfWeek) {
-        currentWeek = week;
-      }
-
       const section = document.createElement("section");
       section.className = "fcn-conflict-day";
       const heading = document.createElement("h3");
-      const dayLabel = document.createElement("span");
-      dayLabel.textContent = `${dayEvents[0].day} ${dayEvents[0].weekday}`;
-      heading.append(dayLabel);
-      if (isFirstDayOfWeek && week) {
-        const weekLabel = document.createElement("small");
-        weekLabel.textContent = `Vecka ${week}`;
-        heading.append(weekLabel);
-      }
+      heading.innerHTML = `<span>${dayEvents[0].day} ${dayEvents[0].weekday}</span>${week !== currentWeek && week ? `<small>Vecka ${week}</small>` : ""}`;
+      currentWeek = week;
       section.append(heading);
 
-      const byPitch = new Map();
+      const byVenue = new Map();
       dayEvents.forEach((event) => {
-        const key = `${event.venue}\u0000${normalizePitch(event.pitch)}`;
-        if (!byPitch.has(key)) byPitch.set(key, []);
-        byPitch.get(key).push(event);
+        if (!byVenue.has(event.venue)) byVenue.set(event.venue, []);
+        byVenue.get(event.venue).push(event);
       });
 
-      [...byPitch.values()]
-        .sort((first, second) => first[0].venue.localeCompare(second[0].venue, "sv")
-          || first[0].pitch.localeCompare(second[0].pitch, "sv"))
-        .forEach((pitchEvents) => {
-        pitchEvents.sort((first, second) => first.start - second.start);
-        const hasConflict = pitchEvents.some((event) => conflictingEvents.has(event));
-        const group = document.createElement("article");
-        group.className = `fcn-conflict-group${hasConflict ? " fcn-group-has-conflict" : ""}`;
+      [...byVenue.entries()].sort(([first], [second]) => first.localeCompare(second, "sv")).forEach(([venue, venueEvents]) => {
+        const columns = getMatrixColumns(venueEvents);
+        const starts = venueEvents.map((event) => event.start);
+        const ends = venueEvents.map((event) => event.end ?? event.start + 30);
+        const firstMinute = Math.floor(Math.min(...starts) / 30) * 30;
+        const lastMinute = Math.ceil(Math.max(...ends) / 30) * 30;
+        const duration = Math.max(60, lastMinute - firstMinute);
+        const venueSection = document.createElement("article");
+        venueSection.className = "fcn-matrix-section";
+        venueSection.innerHTML = `<h4>${venue}</h4>`;
 
-        const header = document.createElement("header");
-        const title = document.createElement("strong");
-        title.textContent = `${pitchEvents[0].venue} · ${pitchEvents[0].pitch}`;
-        const conflictCount = pitchEvents.filter((event) => conflictingEvents.has(event)).length;
-        header.append(title);
-        if (hasConflict) {
-          const status = document.createElement("span");
-          status.textContent = `${conflictCount} krockande ${conflictCount === 1 ? "bokning" : "bokningar"}`;
-          header.append(status);
-        }
-        group.append(header);
-
-        const list = document.createElement("ul");
-        pitchEvents.forEach((event) => {
-          const item = document.createElement("li");
-          item.classList.toggle("fcn-list-event-conflict", conflictingEvents.has(event));
-          const typeClass = event.activityType.toLocaleLowerCase("sv-SE").replace("ä", "a").replace("ö", "o");
-          item.classList.add(`fcn-event-${typeClass}`);
-          const timeText = event.end === null ? formatClock(event.start) : `${formatClock(event.start)}–${formatClock(event.end)}`;
-          const time = document.createElement("time");
-          time.textContent = timeText;
-          if (event.hasCalculatedEnd) {
-            const marker = document.createElement("sup");
-            marker.className = "fcn-calculated-marker";
-            marker.textContent = "*";
-            marker.title = `Sluttiden är beräknad utifrån standardtiden för ${event.gameFormat}`;
-            marker.setAttribute("aria-label", `Sluttiden är beräknad utifrån standardtiden för ${event.gameFormat}`);
-            time.append(marker);
-          }
-          const type = document.createElement("span");
-          type.className = `fcn-type fcn-type-${typeClass}`;
-          type.textContent = event.activityType;
-          item.append(time, type);
-          const eventTitle = event.href ? document.createElement("a") : document.createElement("span");
-          eventTitle.className = "fcn-event-title";
-          eventTitle.textContent = `${event.team ? `${event.team} · ` : ""}${event.text.split(",")[0]}`;
-          if (event.href) eventTitle.href = event.href;
-          item.append(eventTitle);
-          const partners = conflictPartners.get(event) ?? [];
-          if (partners.length) {
-            const conflictDetails = document.createElement("small");
-            conflictDetails.className = "fcn-conflict-details";
-            conflictDetails.textContent = `Överlappar: ${partners.map((partner) =>
-              `${formatClock(partner.start)}–${formatClock(partner.end)} · ${partner.team || partner.activityType} · ${partner.pitch}`
-            ).join("; ")}`;
-            item.append(conflictDetails);
-
-            const conflictsWithMatch = partners.some((partner) => partner.activityType === "Match");
-            const conflictsWithTraining = partners.some((partner) => partner.activityType === "Träning");
-            if (event.activityType === "Match" && conflictsWithTraining) {
-              const priority = document.createElement("strong");
-              priority.className = "fcn-priority-note fcn-priority-match";
-              priority.textContent = "Match har företräde";
-              item.append(priority);
-            } else if (event.activityType === "Träning" && conflictsWithMatch) {
-              const priority = document.createElement("strong");
-              priority.className = "fcn-priority-note fcn-priority-training";
-              priority.textContent = "Behöver samordnas – överlappande match har företräde";
-              item.append(priority);
-            }
-          }
-          list.append(item);
+        const scroll = document.createElement("div");
+        scroll.className = "fcn-matrix-scroll";
+        const matrix = document.createElement("div");
+        matrix.className = "fcn-time-matrix";
+        matrix.style.setProperty("--columns", columns.length);
+        const corner = document.createElement("div");
+        corner.className = "fcn-matrix-corner";
+        corner.textContent = "Tid";
+        const headers = document.createElement("div");
+        headers.className = "fcn-matrix-headers";
+        headers.style.gridTemplateColumns = `repeat(${columns.length}, minmax(130px, 1fr))`;
+        columns.forEach((pitch) => {
+          const header = document.createElement("strong");
+          header.textContent = pitch;
+          headers.append(header);
         });
-        group.append(list);
-        section.append(group);
+        const times = document.createElement("div");
+        times.className = "fcn-matrix-times";
+        const canvas = document.createElement("div");
+        canvas.className = "fcn-matrix-canvas";
+        canvas.style.minWidth = `${columns.length * 130}px`;
+        canvas.style.height = `${duration * 1.2}px`;
+        times.style.height = canvas.style.height;
+
+        for (let minute = firstMinute; minute <= lastMinute; minute += 30) {
+          const offset = (minute - firstMinute) * 1.2;
+          const label = document.createElement("time");
+          label.textContent = formatClock(minute);
+          label.style.top = `${offset}px`;
+          times.append(label);
+          const line = document.createElement("i");
+          line.style.top = `${offset}px`;
+          line.className = minute % 60 === 0 ? "fcn-hour-line" : "";
+          canvas.append(line);
+        }
+
+        venueEvents.sort((first, second) => first.start - second.start).forEach((event) => {
+          const [columnStart, columnEnd] = getEventColumnRange(event, columns);
+          const button = document.createElement("button");
+          const eventHeading = document.createElement("strong");
+          const eventMeta = document.createElement("span");
+          const typeClass = event.activityType.toLocaleLowerCase("sv-SE").replace("ä", "a").replace("ö", "o");
+          const partners = conflictPartners.get(event) ?? [];
+          button.type = "button";
+          button.className = `fcn-matrix-event fcn-event-${typeClass}${partners.length ? " fcn-list-event-conflict" : ""}`;
+          button.style.top = `${(event.start - firstMinute) * 1.2}px`;
+          button.style.height = `${Math.max(28, ((event.end ?? event.start + 30) - event.start) * 1.2)}px`;
+          button.style.left = `calc(${columnStart / columns.length * 100}% + 2px)`;
+          button.style.width = `calc(${(columnEnd - columnStart) / columns.length * 100}% - 4px)`;
+          button.title = `${event.team} · ${event.text}`;
+          eventHeading.dataset.fullHeading = [shortTeamName(event.team), additionalEventInfo(event)]
+            .filter(Boolean)
+            .join(" · ");
+          eventHeading.textContent = eventHeading.dataset.fullHeading;
+          eventMeta.textContent = `${formatClock(event.start)}–${formatClock(event.end ?? event.start + 30)}${event.hasCalculatedEnd ? "*" : ""} · ${event.activityType.charAt(0)}${partners.length ? " · ⚠" : ""}`;
+          button.append(eventHeading, eventMeta);
+          button.addEventListener("click", () => openEventDetails(event, partners));
+          canvas.append(button);
+        });
+
+        matrix.append(corner, headers, times, canvas);
+        scroll.append(matrix);
+        venueSection.append(scroll);
+        section.append(venueSection);
       });
       fragment.append(section);
     });
@@ -382,6 +459,10 @@
       fragment.append(calculatedNote);
     }
     container.replaceChildren(fragment);
+    eventHeadingObserver?.disconnect();
+    eventHeadingObserver = new ResizeObserver(() => fitEventHeadings(container));
+    eventHeadingObserver.observe(container);
+    fitEventHeadings(container);
   }
 
   function initialize() {
@@ -398,6 +479,7 @@
     const previousActivity = existingToolbar?.querySelector("#fcn-activity-filter")?.value ?? "";
     const previousWeek = existingToolbar?.querySelector("#fcn-week-filter")?.value ?? "";
     existingToolbar?.remove();
+    document.getElementById(VIEW_SWITCH_ID)?.remove();
 
     let matchDurations = loadMatchDurations();
     let events = collectEvents(calendars, matchDurations);
@@ -414,7 +496,7 @@
     toolbar.setAttribute("aria-label", "Grupperad plankalender med krockar");
     toolbar.innerHTML = `
       <div class="fcn-filter-heading">
-        <div><strong>Plankalender</strong><span>Alla bokningar grupperas per dag, anläggning och plan. Krockar markeras rött.</span></div>
+        <div><strong>Plankalender</strong><span>Tid visas lodrätt och planer som kolumner. Klicka på en bokning för detaljer.</span></div>
         <output id="fcn-conflict-count" aria-live="polite"></output>
       </div>
       <div class="fcn-filter-controls">
@@ -431,7 +513,24 @@
       </details>
       <div id="fcn-conflict-overview"></div>
       <p class="fcn-method-note">Krockar jämförs på samma datum och plan. Vid krock mellan match och träning har matchen företräde som standard. Lagen kan därefter komma överens om annat. Hela konstgräsplanen räknas även mot dess delplaner. Övrigt räknas bara som krock när två Övrigt-bokningar överlappar i konferensrummet. En angiven sluttid gäller alltid före standardtiden.</p>`;
-    calendars[0].parentElement.insertBefore(toolbar, calendars[0]);
+
+    const viewSwitch = document.createElement("div");
+    viewSwitch.id = VIEW_SWITCH_ID;
+    viewSwitch.setAttribute("role", "group");
+    viewSwitch.setAttribute("aria-label", "Kalendervy");
+    viewSwitch.innerHTML = `
+      <span>Visa kalender:</span>
+      <button type="button" data-view="advanced">Avancerad</button>
+      <button type="button" data-view="original">Original</button>`;
+
+    if (calendars[0].matches(MODERN_CALENDAR_SELECTOR)) {
+      const calendarHeader = calendars[0].querySelector(":scope > .sa-calendar__header");
+      if (calendarHeader) calendarHeader.after(viewSwitch, toolbar);
+      else calendars[0].prepend(viewSwitch, toolbar);
+    } else {
+      calendars[0].parentElement.insertBefore(viewSwitch, calendars[0]);
+      viewSwitch.after(toolbar);
+    }
 
     const weekSelect = toolbar.querySelector("#fcn-week-filter");
     const venueSelect = toolbar.querySelector("#fcn-venue-filter");
@@ -511,6 +610,35 @@
       renderScheduleOverview(overview, filtered);
     }
 
+    function setCalendarView(view) {
+      const showOriginal = view === "original";
+      calendars.forEach((calendar) => {
+        const wrapper = calendar.matches(MODERN_CALENDAR_SELECTOR) ? calendar : calendar.closest("#calWrap");
+        wrapper?.classList.toggle("fcn-show-original", showOriginal);
+      });
+      viewSwitch.querySelectorAll("button[data-view]").forEach((button) => {
+        const selected = button.dataset.view === view;
+        button.classList.toggle("fcn-view-active", selected);
+        button.setAttribute("aria-pressed", String(selected));
+      });
+
+      if (showOriginal) {
+        allEventRows.forEach((row) => {
+          row.hidden = false;
+          row.classList.remove("fcn-hidden-by-filter");
+          row.style.removeProperty("display");
+        });
+        calendars.flatMap(getDayRows).forEach((dayRow) => {
+          dayRow.hidden = false;
+          dayRow.classList.remove("fcn-hidden-by-filter");
+          dayRow.style.removeProperty("display");
+        });
+      } else {
+        applyFilter();
+      }
+      localStorage.setItem(CALENDAR_VIEW_KEY, view);
+    }
+
     weekSelect.addEventListener("change", () => { updatePitchOptions(); applyFilter(); });
     venueSelect.addEventListener("change", () => { updatePitchOptions(); applyFilter(); });
     pitchSelect.addEventListener("change", applyFilter);
@@ -533,12 +661,16 @@
       updatePitchOptions();
       applyFilter();
     });
+    viewSwitch.addEventListener("click", (event) => {
+      const button = event.target.closest("button[data-view]");
+      if (button) setCalendarView(button.dataset.view);
+    });
 
     updatePitchOptions();
     if ([...pitchSelect.options].some((option) => option.value === previousPitch)) {
       pitchSelect.value = previousPitch;
     }
-    applyFilter();
+    setCalendarView(localStorage.getItem(CALENDAR_VIEW_KEY) === "original" ? "original" : "advanced");
     return true;
   }
 

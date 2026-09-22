@@ -8,7 +8,10 @@ En lokal Chrome/Edge-extension som kompletterar FC Norrskens kalender med filter
 - Läser kalendern i `#myForm`.
 - Filtrerar bokningar för Norrvallen, Rosvalla, Hedvalla och Sjulevi samt aktiviteter utan angiven anläggning, exempelvis bortamatcher.
 - Visar hela månaden som standard men låter användaren begränsa listan till en enskild vecka.
-- Visar alla bokningar som en kompakt lista grupperad per dag, anläggning och plan. Veckonumret visas till höger på veckans första dag.
+- Visar bokningarna i en tidsmatris per dag och anläggning, med tid lodrätt och planer som kolumner.
+- Låter användaren växla mellan den avancerade plankalendern och SportAdmins originalkalender. Valet sparas lokalt.
+- Visar hela konstgräsplanen som ett sammanhängande block över dess delplaner.
+- Öppnar fullständig boknings- och krockinformation när ett block klickas.
 - Markerar krockande grupper och bokningar med rött.
 - Visar vilken tid, vilket lag och vilken plan varje krockande bokning överlappar.
 - Markerar att match har företräde som föreningens standard vid krock mellan match och träning, samt att träningen behöver samordnas.
