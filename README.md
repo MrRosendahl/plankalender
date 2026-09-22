@@ -46,6 +46,19 @@ Aktivitetstypen Övrigt ingår i krockkontrollen när aktiviteten har en angiven
 
 Efter kodändringar: klicka på omladdningsknappen för extensionen på extensionsidan och ladda sedan om kalenderfliken.
 
+## Publicering i Chrome Web Store
+
+Dokumentation för publicering finns i följande filer:
+
+- `PRIVACY.md` – offentlig integritetspolicy på engelska.
+- `STORE_LISTING.md` – färdig text och metadata för butikssidan.
+- `PRIVACY_DISCLOSURES.md` – föreslagna svar för fliken Privacy practices.
+- `TEST_INSTRUCTIONS.md` – instruktioner till Chrome Web Stores granskare.
+- `PUBLISHING_CHECKLIST.md` – stegvis kontrollista inför publicering.
+- `CHANGELOG.md` – versionshistorik.
+
+En egen rödvit kalenderikon finns i `icons/` och är registrerad i manifestet. Innan publicering måste fortfarande skärmbilder av den faktiska extensionen tas. Se `PUBLISHING_CHECKLIST.md` för krav och återstående steg.
+
 ## Begränsning
 
 Första versionen bygger på kalenderns nuvarande HTML-struktur. Om SportAdmin ändrar strukturen kan selektorerna behöva uppdateras.
