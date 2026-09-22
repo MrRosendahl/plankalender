@@ -491,9 +491,8 @@
         const firstMinute = Math.floor(Math.min(...starts) / 30) * 30;
         const roundedLastMinute = Math.ceil(Math.max(...ends) / 30) * 30;
         let lastMinute = Math.max(firstMinute + 60, roundedLastMinute);
-        const eventFillsVisibleRange = venueEvents.some((event) =>
-          event.start <= firstMinute && (event.end ?? event.start + 30) >= lastMinute);
-        if (eventFillsVisibleRange) lastMinute += 30;
+        const latestEventTouchesEnd = Math.max(...ends) >= lastMinute;
+        if (latestEventTouchesEnd) lastMinute += 30;
         const duration = lastMinute - firstMinute;
         const venueSection = document.createElement("article");
         venueSection.className = "fcn-matrix-section";
