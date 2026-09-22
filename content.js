@@ -4,7 +4,7 @@
   const TARGET_CALENDAR_ID = "370929";
   const VENUES = ["Norrvallen", "Rosvalla", "Hedvalla", "Sjulevi"];
   const UNKNOWN_VENUE = "Utan anläggning";
-  const UNKNOWN_PITCH = "Ingen plan angiven";
+  const UNKNOWN_PITCH = "Ingen bokningsyta angiven";
   const ACTIVITY_TYPES = ["Match", "Träning", "Övrigt"];
   const GAME_FORMATS = ["3v3", "5v5", "7v7", "9v9", "11v11"];
   const DEFAULT_MATCH_MINUTES = Object.fromEntries(GAME_FORMATS.map((format) => [format, 120]));
@@ -126,7 +126,7 @@
       const gameFormat = activityType === "Match" ? inferGameFormat(team, eventText) : "";
       const end = explicitEnd ?? (activityType === "Match" && start !== null ? start + matchDurations[gameFormat] : null);
       const pitch = detectedVenue
-        ? canonicalizePitch(location.replace(new RegExp(`^${detectedVenue}\\s*`, "i"))) || "Ospecificerad plan"
+        ? canonicalizePitch(location.replace(new RegExp(`^${detectedVenue}\\s*`, "i"))) || "Ospecificerad bokningsyta"
         : UNKNOWN_PITCH;
 
       return {
@@ -160,7 +160,7 @@
       const location = commaIndex >= 0 ? normalize(eventText.slice(commaIndex + 1)) : eventText;
       pitch = canonicalizePitch(location
         .replace(/\s*\([^)]*\)\s*(?:\([^)]*\)\s*)*$/, "")
-        .replace(new RegExp(`^${detectedVenue}\\s*`, "i"), "")) || "Ospecificerad plan";
+        .replace(new RegExp(`^${detectedVenue}\\s*`, "i"), "")) || "Ospecificerad bokningsyta";
     }
 
     return {
@@ -214,7 +214,7 @@
   function activitiesCanConflict(first, second) {
     const hasBookableArea = (event) => event.hasKnownVenue
       && event.pitch !== UNKNOWN_PITCH
-      && normalizePitch(event.pitch) !== normalizePitch("Ospecificerad plan");
+      && normalizePitch(event.pitch) !== normalizePitch("Ospecificerad bokningsyta");
     return hasBookableArea(first) && hasBookableArea(second);
   }
 
@@ -664,17 +664,17 @@
 
     const toolbar = document.createElement("section");
     toolbar.id = TOOLBAR_ID;
-    toolbar.setAttribute("aria-label", "Grupperad plankalender med krockar");
+    toolbar.setAttribute("aria-label", "Grupperad bokningskalender med krockar");
     toolbar.innerHTML = `
       <div class="fcn-filter-heading">
-        <div><strong>Plankalender</strong><span>Tid visas lodrätt och planer som kolumner. Klicka på en bokning för detaljer.</span></div>
+        <div><strong>Bokningskalender</strong><span>Tid visas lodrätt och bokningsytor som kolumner. Klicka på en bokning för detaljer.</span></div>
         <output id="fcn-conflict-count" aria-live="polite"></output>
       </div>
       <div class="fcn-filter-controls">
         <label><span>Sektion</span><select id="fcn-section-filter"></select></label>
         <label><span>Period</span><select id="fcn-week-filter"></select></label>
         <label><span>Anläggning</span><select id="fcn-venue-filter"></select></label>
-        <label><span>Plan</span><select id="fcn-pitch-filter" disabled></select></label>
+        <label><span>Bokningsyta</span><select id="fcn-pitch-filter" disabled></select></label>
         <label><span>Aktivitetstyp</span><select id="fcn-activity-filter"></select></label>
         <button type="button" id="fcn-reset-filter" class="fcn-secondary-button">Rensa</button>
       </div>
@@ -684,7 +684,7 @@
         <div class="fcn-duration-inputs"></div>
       </details>
       <div id="fcn-conflict-overview"></div>
-      <p class="fcn-method-note">Krockar jämförs på samma datum och plan för matcher, träningar och övriga aktiviteter med en angiven plan eller bokningsyta. Vid krock mellan match och träning har matchen företräde som standard. Lagen kan därefter komma överens om annat. Hela konstgräsplanen räknas även mot dess delplaner. En angiven sluttid gäller alltid före standardtiden.</p>`;
+      <p class="fcn-method-note">Krockar jämförs på samma datum och bokningsyta för matcher, träningar och övriga aktiviteter med en angiven bokningsyta. Vid krock mellan match och träning har matchen företräde som standard. Lagen kan därefter komma överens om annat. Hela konstgräsplanen räknas även mot dess delplaner. En angiven sluttid gäller alltid före standardtiden.</p>`;
 
     const viewSwitch = document.createElement("div");
     viewSwitch.id = VIEW_SWITCH_ID;
@@ -755,7 +755,7 @@
           if (!pitchesByNormalizedName.has(normalized)) pitchesByNormalizedName.set(normalized, pitch);
         });
       const pitches = [...pitchesByNormalizedName.values()].sort((a, b) => a.localeCompare(b, "sv"));
-      pitchSelect.replaceChildren(createOption("", "Alla planer"));
+      pitchSelect.replaceChildren(createOption("", "Alla bokningsytor"));
       pitches.forEach((pitch) => pitchSelect.append(createOption(pitch)));
       pitchSelect.disabled = !selectedVenue;
       pitchSelect.value = pitches.find((pitch) => normalizePitch(pitch) === normalizePitch(currentPitch)) ?? "";

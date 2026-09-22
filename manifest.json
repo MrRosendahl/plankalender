@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "FC Norrsken Plankalender",
-  "version": "0.9.11",
-  "description": "Visar bokningar i en tidsmatris och hittar krockar mellan planer.",
+  "name": "FC Norrsken Bokningskalender",
+  "version": "0.9.12",
+  "description": "Visar bokningar i en tidsmatris och hittar krockar mellan bokningsytor.",
   "content_scripts": [
     {
       "matches": ["https://www.fcnorrsken.se/kalender/*"],

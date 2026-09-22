@@ -1,17 +1,17 @@
-# FC Norrsken Plankalender
+# FC Norrsken Bokningskalender
 
-En lokal Chrome/Edge-extension som kompletterar FC Norrskens kalender med filter för anläggning och plan. Den ändrar inte webbplatsen för andra användare och skickar ingen information till någon extern tjänst.
+En lokal Chrome/Edge-extension som kompletterar FC Norrskens kalender med filter för anläggning och bokningsyta, exempelvis plan, sporthall eller konferensrum. Den ändrar inte webbplatsen för andra användare och skickar ingen information till någon extern tjänst.
 
 ## Funktioner
 
 - Körs bara på kalenderadressen när `ID=370929`.
 - Läser kalendern i `#myForm`.
-- Filtrerar bokningar efter sektion, anläggning, plan och aktivitetstyp.
+- Filtrerar bokningar efter sektion, anläggning, bokningsyta och aktivitetstyp.
 - Filtrerar bokningar för Norrvallen, Rosvalla, Hedvalla och Sjulevi samt aktiviteter utan angiven anläggning, exempelvis bortamatcher.
 - Visar hela månaden som standard men låter användaren begränsa listan till en enskild vecka.
-- Visar bokningarna i en tidsmatris per dag och anläggning, med tid lodrätt och planer som kolumner.
+- Visar bokningarna i en tidsmatris per dag och anläggning, med tid lodrätt och bokningsytor som kolumner.
 - Lägger till lite utrymme efter den sista bokningen när den når tidslinjens nederkant, så att sluttiden förblir läsbar. Kortare bokningar som redan ryms förstorar inte vyn i onödan.
-- Låter användaren växla mellan den avancerade plankalendern och SportAdmins originalkalender. Valet sparas lokalt.
+- Låter användaren växla mellan den avancerade bokningskalendern och SportAdmins originalkalender. Valet sparas lokalt.
 - Visar SportAdmins ursprungliga val för sektion och aktivitetstyp endast i originalkalendern.
 - Visar hela konstgräsplanen som ett sammanhängande block över dess delplaner.
 - Normaliserar plannamnet `Konstgräs` till `Konstgräs Hela` i all visning och krockkontroll.
@@ -30,10 +30,10 @@ En lokal Chrome/Edge-extension som kompletterar FC Norrskens kalender med filter
 - Låter användaren ändra standardtiden för 3v3, 5v5, 7v7, 9v9 och 11v11. Inställningarna sparas lokalt i webbläsaren.
 - Markerar även de berörda raderna i den vanliga kalendern.
 
-Krockkontrollen kräver samma datum och anläggning, överlappande tider och samma plan. En bokning av hela konstgräsplanen jämförs också med dess delplaner. Om kalendern anger en sluttid används den alltid i stället för den konfigurerade standardtiden.
+Krockkontrollen kräver samma datum och anläggning, överlappande tider och samma bokningsyta. En bokning av hela konstgräsplanen jämförs också med dess delplaner. Om kalendern anger en sluttid används den alltid i stället för den konfigurerade standardtiden.
 Vid krock mellan match och träning visas matchen som prioriterad. Träningen markeras som att den behöver samordnas. Informationen är vägledande; lagen kan komma överens om annat.
 Aktiviteter utan en känd anläggning visas och kan filtreras fram, men räknas inte som plankrockar.
-Aktivitetstypen Övrigt ingår i krockkontrollen när aktiviteten har en angiven plan eller bokningsyta. Den kan då krocka med matcher, träningar och andra Övrigt-bokningar på samma yta när tiderna överlappar. Aktiviteter utan angiven plan eller bokningsyta undantas från krockkontrollen.
+Aktivitetstypen Övrigt ingår i krockkontrollen när aktiviteten har en angiven bokningsyta. Den kan då krocka med matcher, träningar och andra Övrigt-bokningar på samma yta när tiderna överlappar. Aktiviteter utan angiven bokningsyta undantas från krockkontrollen.
 
 ## Installera lokalt
 
