@@ -309,20 +309,28 @@
   }
 
   function getConflictEntryRows(events, columns, groupColumnStart) {
-    const rows = [];
     const layout = new Map();
+    const rowCountByRange = new Map();
+    const wholePitchEvents = [];
+
     events.forEach((event) => {
       const [columnStart, columnEnd] = getEventColumnRange(event, columns);
       const range = [columnStart - groupColumnStart, columnEnd - groupColumnStart];
-      const end = event.end ?? event.start + 30;
-      let rowIndex = rows.findIndex((row) => row.start === event.start && row.end === end
-        && row.ranges.every(([start, rangeEnd]) => range[0] >= rangeEnd || start >= range[1]));
-      if (rowIndex < 0) {
-        rowIndex = rows.length;
-        rows.push({ start: event.start, end, ranges: [] });
+      if (isWholeArtificialPitch(event.pitch)) {
+        wholePitchEvents.push({ event, range });
+        return;
       }
-      rows[rowIndex].ranges.push(range);
-      layout.set(event, { range, row: rowIndex + 1 });
+
+      const rangeKey = range.join(":");
+      const row = (rowCountByRange.get(rangeKey) ?? 0) + 1;
+      rowCountByRange.set(rangeKey, row);
+      layout.set(event, { range, row });
+    });
+
+    let wholePitchRow = Math.max(0, ...rowCountByRange.values());
+    wholePitchEvents.forEach(({ event, range }) => {
+      wholePitchRow += 1;
+      layout.set(event, { range, row: wholePitchRow });
     });
     return layout;
   }
@@ -481,8 +489,12 @@
         const starts = venueEvents.map((event) => event.start);
         const ends = venueEvents.map((event) => event.end ?? event.start + 30);
         const firstMinute = Math.floor(Math.min(...starts) / 30) * 30;
-        const lastMinute = Math.ceil(Math.max(...ends) / 30) * 30;
-        const duration = Math.max(60, lastMinute - firstMinute);
+        const roundedLastMinute = Math.ceil(Math.max(...ends) / 30) * 30;
+        let lastMinute = Math.max(firstMinute + 60, roundedLastMinute);
+        const eventFillsVisibleRange = venueEvents.some((event) =>
+          event.start <= firstMinute && (event.end ?? event.start + 30) >= lastMinute);
+        if (eventFillsVisibleRange) lastMinute += 30;
+        const duration = lastMinute - firstMinute;
         const venueSection = document.createElement("article");
         venueSection.className = "fcn-matrix-section";
         if (showVenueHeadings) {
@@ -556,7 +568,9 @@
         });
 
         venueConflictGroups.forEach((group) => {
-          group.sort((first, second) => first.start - second.start || shortTeamName(first.team).localeCompare(shortTeamName(second.team), "sv"));
+          group.sort((first, second) => first.start - second.start
+            || (first.end ?? first.start + 30) - (second.end ?? second.start + 30)
+            || shortTeamName(first.team).localeCompare(shortTeamName(second.team), "sv"));
           const groupStart = Math.min(...group.map((event) => event.start));
           const groupEnd = Math.max(...group.map((event) => event.end ?? event.start + 30));
           const ranges = group.map((event) => getEventColumnRange(event, columns));
