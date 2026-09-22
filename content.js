@@ -1,6 +1,15 @@
+/**
+ * FC Norrsken booking-calendar enhancement.
+ *
+ * This content script runs only for the configured SportAdmin calendar. It
+ * parses both legacy and modern calendar markup, normalizes bookings, detects
+ * overlapping pitch reservations, and renders an interactive timeline. User
+ * preferences are stored locally; no calendar data is sent off the page.
+ */
 (() => {
   "use strict";
 
+  // Calendar scope, supported domain values, and persistent storage keys.
   const TARGET_CALENDAR_ID = "370929";
   const VENUES = ["Norrvallen", "Rosvalla", "Hedvalla", "Sjulevi"];
   const UNKNOWN_VENUE = "Utan anläggning";
@@ -26,8 +35,10 @@
   let observedEventRows = [];
   let eventHeadingObserver = null;
 
+  // Do not modify other calendars covered by the manifest URL pattern.
   if (new URLSearchParams(window.location.search).get("ID") !== TARGET_CALENDAR_ID) return;
 
+  // Normalize text extracted from inconsistent legacy and responsive markup.
   const normalize = (value) => String(value ?? "")
     .replace(/undefined/gi, "")
     .replace(/\s+/g, " ")
@@ -49,6 +60,7 @@
     }
   }
 
+  /** Finds supported calendar roots, preferring SportAdmin's modern layout. */
   function findCalendars() {
     const modernCalendars = [...document.querySelectorAll(MODERN_CALENDAR_SELECTOR)]
       .filter((calendar) => getDayRows(calendar).length);
@@ -86,6 +98,7 @@
     return match ? Number(match[1]) * 60 + Number(match[2]) : null;
   }
 
+  /** Extracts all clock values from a legacy event cell as minutes after midnight. */
   function parseEventTimes(cell) {
     // SportAdmin renders both a mobile start time and a desktop time range in
     // the same cell. Read the desktop span first to avoid parsing 18:00 twice.
@@ -99,6 +112,7 @@
     return `${String(Math.floor(value / 60)).padStart(2, "0")}:${String(value % 60).padStart(2, "0")}`;
   }
 
+  /** Infers the game format from explicit event text or the team's birth year. */
   function inferGameFormat(team, text) {
     const stated = text.match(/\b(3|5|7|9|11)\s*(?:v|mot)\s*\1\b/i)?.[1];
     const pitch = text.match(/\b(3|5|7|9|11)v\1\b/i)?.[1];
@@ -116,6 +130,7 @@
     return age === 15 ? "11v11 (15 år)" : "11v11 (16+ år)";
   }
 
+  /** Converts one modern or legacy calendar row into the extension's event model. */
   function parseEvent(row, dayRow, week, matchDurations) {
     if (row.matches(".sa-calendar__event")) {
       const team = normalize(row.querySelector(".sa-calendar__event-label")?.textContent ?? "");
@@ -206,6 +221,9 @@
       || normalizedTeam.endsWith(` ${normalizedSection}`);
   }
 
+  // Pitch subdivisions are represented as half-open ranges across four
+  // quarters. This makes whole-pitch, half-pitch, and quarter-pitch bookings
+  // comparable without relying on exact display-name equality.
   function pitchesOverlap(firstPitch, secondPitch) {
     const first = normalizePitch(firstPitch);
     const second = normalizePitch(secondPitch);
@@ -236,6 +254,7 @@
       && first.start < second.end && second.start < first.end;
   }
 
+  /** Finds connected conflict groups, including chains of overlapping events. */
   function findConflictGroups(events) {
     const candidates = events.filter((event) => event.hasKnownVenue && event.pitch && event.start !== null && event.end !== null);
     const visited = new Set();
@@ -343,6 +362,7 @@
     return layout;
   }
 
+  /** Assigns overlapping events to visual lanes within each pitch range. */
   function getEventLaneLayout(events, columns) {
     const layout = new Map();
     const byColumnRange = new Map();
@@ -415,6 +435,7 @@
     });
   }
 
+  /** Opens a modal with complete booking details and direct conflict partners. */
   function openEventDetails(event, partners) {
     let dialog = document.getElementById("fcn-event-dialog");
     if (!dialog) {
@@ -455,6 +476,7 @@
     if (!dialog.open) dialog.showModal();
   }
 
+  /** Renders filtered events as one vertical time matrix per day and venue. */
   function renderScheduleOverview(container, events, showVenueHeadings = true) {
     const conflictGroups = findConflictGroups(events);
     const conflictingEvents = new Set(conflictGroups.flat());
@@ -652,6 +674,7 @@
     fitEventHeadings(container);
   }
 
+  /** Builds or refreshes the enhanced calendar controls and timeline. */
   function initialize() {
     const calendars = findCalendars();
     if (!calendars.length) return false;
@@ -882,6 +905,8 @@
     return true;
   }
 
+  // SportAdmin can replace calendar markup dynamically. Coalesce mutation
+  // notifications into one refresh per animation frame.
   let initializationScheduled = false;
   function scheduleInitialization() {
     if (initializationScheduled) return;
