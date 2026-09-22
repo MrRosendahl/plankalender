@@ -10,7 +10,10 @@
   const DEFAULT_MATCH_MINUTES = Object.fromEntries(GAME_FORMATS.map((format) => [format, 120]));
   const MATCH_DURATION_KEY = "fcn-match-duration-by-format";
   const TOOLBAR_ID = "fcn-plankalender";
-  const EVENT_ROW_SELECTOR = ":scope > td:nth-child(4) > table > tbody > tr";
+  const LEGACY_EVENT_ROW_SELECTOR = ":scope > td:nth-child(4) > table > tbody > tr";
+  const MODERN_CALENDAR_SELECTOR = ".sa-calendar";
+  const MODERN_DAY_SELECTOR = ":scope > .sa-calendar__date-group";
+  const MODERN_EVENT_SELECTOR = ":scope > .sa-calendar__events > .sa-calendar__event";
   let observedEventRows = [];
 
   if (new URLSearchParams(window.location.search).get("ID") !== TARGET_CALENDAR_ID) return;
@@ -31,21 +34,34 @@
   }
 
   function findCalendars() {
+    const modernCalendars = [...document.querySelectorAll(MODERN_CALENDAR_SELECTOR)]
+      .filter((calendar) => getDayRows(calendar).length);
+    if (modernCalendars.length) return modernCalendars;
+
     const form = document.querySelector("#myForm");
     if (!form) return [];
     return [...form.querySelectorAll("table.mCal")].filter((table) => getDayRows(table).length);
   }
 
   function getDayRows(calendar) {
-    return [...(calendar.tBodies[0]?.rows ?? [])].filter((row) => row.querySelector(EVENT_ROW_SELECTOR));
+    if (calendar.matches(MODERN_CALENDAR_SELECTOR)) {
+      return [...calendar.querySelectorAll(MODERN_DAY_SELECTOR)].filter((group) => group.querySelector(MODERN_EVENT_SELECTOR));
+    }
+    return [...(calendar.tBodies[0]?.rows ?? [])].filter((row) => row.querySelector(LEGACY_EVENT_ROW_SELECTOR));
   }
 
   function getEventRows(container) {
-    return getDayRows(container).flatMap((dayRow) => [...dayRow.querySelectorAll(EVENT_ROW_SELECTOR)]);
+    return getDayRows(container).flatMap((dayRow) => [...dayRow.querySelectorAll(
+      dayRow.matches(".sa-calendar__date-group") ? MODERN_EVENT_SELECTOR : LEGACY_EVENT_ROW_SELECTOR
+    )]);
   }
 
-  function getCalendarWeek(calendar) {
-    const weekText = normalize(calendar.previousElementSibling?.textContent ?? "");
+  function getCalendarWeek(calendar, dayRow) {
+    let weekElement = dayRow?.previousElementSibling ?? calendar.previousElementSibling;
+    while (weekElement && !weekElement.matches(".sa-calendar__week-header")) {
+      weekElement = weekElement.previousElementSibling;
+    }
+    const weekText = normalize(weekElement?.textContent ?? calendar.previousElementSibling?.textContent ?? "");
     return weekText.match(/v\.\s*(\d+)/i)?.[1] ?? "";
   }
 
@@ -84,6 +100,35 @@
   }
 
   function parseEvent(row, dayRow, week, matchDurations) {
+    if (row.matches(".sa-calendar__event")) {
+      const team = normalize(row.querySelector(".sa-calendar__event-label")?.textContent ?? "");
+      const eventLink = row.querySelector(".sa-calendar__event-link");
+      const heading = normalize(row.querySelector(".sa-calendar__event-heading")?.textContent ?? "");
+      const location = normalize(row.querySelector(".sa-calendar__event-location")?.textContent ?? "").replace(/^,\s*/, "");
+      const eventText = normalize([heading, location].filter(Boolean).join(", "));
+      const detectedVenue = VENUES.find((name) => location.toLocaleLowerCase("sv-SE").includes(name.toLocaleLowerCase("sv-SE")));
+      const venue = detectedVenue ?? UNKNOWN_VENUE;
+      const headingLower = heading.toLocaleLowerCase("sv-SE");
+      const activityType = headingLower.includes("träning")
+        ? "Träning"
+        : /\b(?:hemma|borta)\b/i.test(heading) ? "Match" : "Övrigt";
+      const start = parseClock(row.querySelector(".sa-calendar__time-start")?.textContent ?? "");
+      const explicitEnd = parseClock(row.querySelector(".sa-calendar__time-end")?.textContent ?? "");
+      const gameFormat = activityType === "Match" ? inferGameFormat(team, eventText) : "";
+      const end = explicitEnd ?? (activityType === "Match" && start !== null ? start + matchDurations[gameFormat] : null);
+      const pitch = detectedVenue
+        ? normalize(location.replace(new RegExp(`^${detectedVenue}\\s*`, "i"))) || "Ospecificerad plan"
+        : UNKNOWN_PITCH;
+
+      return {
+        row, dayRow, venue, pitch, hasKnownVenue: Boolean(detectedVenue), activityType, team, text: eventText,
+        day: normalize(dayRow.querySelector(".sa-calendar__date-number")?.textContent ?? ""), week,
+        weekday: normalize(dayRow.querySelector(".sa-calendar__date-day")?.textContent ?? ""),
+        href: eventLink?.href ?? "", start, end, gameFormat,
+        hasCalculatedEnd: explicitEnd === null && activityType === "Match" && start !== null
+      };
+    }
+
     const cells = row.cells;
     if (cells.length < 2) return null;
 
@@ -120,10 +165,9 @@
 
   function collectEvents(calendars, matchDurations) {
     return calendars.flatMap((calendar) => {
-      const week = getCalendarWeek(calendar);
       return getDayRows(calendar).flatMap((dayRow) =>
-        [...dayRow.querySelectorAll(EVENT_ROW_SELECTOR)]
-          .map((row) => parseEvent(row, dayRow, week, matchDurations))
+        [...dayRow.querySelectorAll(dayRow.matches(".sa-calendar__date-group") ? MODERN_EVENT_SELECTOR : LEGACY_EVENT_ROW_SELECTOR)]
+          .map((row) => parseEvent(row, dayRow, getCalendarWeek(calendar, dayRow), matchDurations))
           .filter(Boolean));
     });
   }
@@ -360,7 +404,9 @@
     if (!events.length) return false;
     observedEventRows = allEventRows;
 
-    const calendarWrapper = calendars[0].closest("#calWrap");
+    const calendarWrapper = calendars[0].matches(MODERN_CALENDAR_SELECTOR)
+      ? calendars[0]
+      : calendars[0].closest("#calWrap");
     calendarWrapper?.classList.add("fcn-calendar-replaced");
 
     const toolbar = document.createElement("section");
@@ -447,7 +493,9 @@
       });
 
       calendars.flatMap(getDayRows).forEach((dayRow) => {
-        const rows = [...dayRow.querySelectorAll(EVENT_ROW_SELECTOR)];
+        const rows = [...dayRow.querySelectorAll(
+          dayRow.matches(".sa-calendar__date-group") ? MODERN_EVENT_SELECTOR : LEGACY_EVENT_ROW_SELECTOR
+        )];
         const visible = !active || rows.some((row) => visibleRows.has(row));
         dayRow.hidden = !visible;
         dayRow.classList.toggle("fcn-hidden-by-filter", !visible);

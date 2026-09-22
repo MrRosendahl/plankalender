@@ -1,10 +1,14 @@
-#myForm .fcn-hidden-by-filter { display: none !important; }
+#myForm .fcn-hidden-by-filter,
+.sa-calendar .fcn-hidden-by-filter { display: none !important; }
 #myForm .fcn-conflicting-event > td:last-child { border-right: 3px solid #c7382f; }
+.sa-calendar .fcn-conflicting-event { box-shadow: inset -3px 0 #c7382f; }
 
 /* Den grupperade plankalendern ersätter SportAdmins listkalender. */
 #calWrap.fcn-calendar-replaced > table.mCal,
 #calWrap.fcn-calendar-replaced > div.visib2le-phone,
-#calWrap.fcn-calendar-replaced > .inner .calBoxBig {
+#calWrap.fcn-calendar-replaced > .inner .calBoxBig,
+.sa-calendar.fcn-calendar-replaced > .sa-calendar__week-header,
+.sa-calendar.fcn-calendar-replaced > .sa-calendar__date-group {
   display: none !important;
 }
 
