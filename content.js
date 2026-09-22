@@ -266,10 +266,17 @@
       const normalized = normalizePitch(event.pitch);
       if (!pitchesByNormalizedName.has(normalized)) pitchesByNormalizedName.set(normalized, event.pitch);
     });
-    return [...pitchesByNormalizedName.values()].sort((first, second) => first.localeCompare(second, "sv"));
+    const pitches = [...pitchesByNormalizedName.values()].sort((first, second) => first.localeCompare(second, "sv"));
+    const artificialParts = pitches.filter((pitch) => normalizePitch(pitch).includes("konstgräs") && !isWholeArtificialPitch(pitch));
+    return pitches.filter((pitch) => !isWholeArtificialPitch(pitch) || artificialParts.length === 0);
   }
 
   function getEventColumnRange(event, columns) {
+    if (isWholeArtificialPitch(event.pitch)) {
+      const indexes = columns.map((pitch, index) => normalizePitch(pitch).includes("konstgräs") ? index : -1)
+        .filter((index) => index >= 0);
+      if (indexes.length) return [Math.min(...indexes), Math.max(...indexes) + 1];
+    }
     const index = Math.max(0, columns.findIndex((pitch) => normalizePitch(pitch) === normalizePitch(event.pitch)));
     return [index, index + 1];
   }
@@ -346,7 +353,7 @@
     });
   }
 
-  function openEventDetails(event, partners) {
+  function openEventDetails(event, partners, conflictPartners) {
     let dialog = document.getElementById("fcn-event-dialog");
     if (!dialog) {
       dialog = document.createElement("dialog");
@@ -360,9 +367,9 @@
     const calculatedText = event.hasCalculatedEnd
       ? `<p class="fcn-dialog-note">* Sluttiden är beräknad utifrån standardtiden för ${event.gameFormat}.</p>` : "";
     const conflictText = partners.length
-      ? `<section class="fcn-dialog-conflicts"><strong>⚠ Krockar med</strong><ul>${partners.map((partner) =>
-        `<li>${formatClock(partner.start)}–${formatClock(partner.end)} · ${shortTeamName(partner.team)} · ${partner.pitch}</li>`
-      ).join("")}</ul></section>` : "";
+      ? `<section class="fcn-dialog-conflicts"><strong>⚠ Krockar med – välj bokning</strong><div>${partners.map((partner, index) =>
+        `<button type="button" data-conflict-index="${index}">${formatClock(partner.start)}–${formatClock(partner.end)} · ${shortTeamName(partner.team)} · ${partner.pitch}</button>`
+      ).join("")}</div></section>` : "";
     const link = event.href ? `<a href="${event.href}">Öppna kalenderhändelsen</a>` : "";
     dialog.innerHTML = `
       <button type="button" class="fcn-dialog-close" aria-label="Stäng">×</button>
@@ -375,7 +382,13 @@
       </dl>
       ${calculatedText}${conflictText}${link}`;
     dialog.querySelector(".fcn-dialog-close").addEventListener("click", () => dialog.close());
-    dialog.showModal();
+    dialog.querySelectorAll("[data-conflict-index]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const selected = partners[Number(button.dataset.conflictIndex)];
+        openEventDetails(selected, conflictPartners.get(selected) ?? [], conflictPartners);
+      });
+    });
+    if (!dialog.open) dialog.showModal();
   }
 
   function renderScheduleOverview(container, events, showVenueHeadings = true) {
@@ -475,8 +488,9 @@
           const eventMeta = document.createElement("span");
           const typeClass = event.activityType.toLocaleLowerCase("sv-SE").replace("ä", "a").replace("ö", "o");
           const partners = conflictPartners.get(event) ?? [];
+          const wholePitchClass = isWholeArtificialPitch(event.pitch) ? " fcn-event-whole-pitch" : "";
           button.type = "button";
-          button.className = `fcn-matrix-event fcn-event-${typeClass}${partners.length ? " fcn-list-event-conflict" : ""}`;
+          button.className = `fcn-matrix-event fcn-event-${typeClass}${wholePitchClass}${partners.length ? " fcn-list-event-conflict" : ""}`;
           button.style.top = `${(event.start - firstMinute) * 1.2}px`;
           button.style.height = `${Math.max(28, ((event.end ?? event.start + 30) - event.start) * 1.2)}px`;
           button.style.left = `calc(${columnStart / columns.length * 100 + lane * laneWidth}% + 2px)`;
@@ -488,7 +502,7 @@
           eventHeading.textContent = eventHeading.dataset.fullHeading;
           eventMeta.textContent = `${formatClock(event.start)}–${formatClock(event.end ?? event.start + 30)}${event.hasCalculatedEnd ? "*" : ""} · ${event.activityType.charAt(0)}${partners.length ? " · ⚠" : ""}`;
           button.append(eventHeading, eventMeta);
-          button.addEventListener("click", () => openEventDetails(event, partners));
+          button.addEventListener("click", () => openEventDetails(event, partners, conflictPartners));
           canvas.append(button);
         });
 
