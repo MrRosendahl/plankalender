@@ -18,6 +18,7 @@ En lokal Chrome/Edge-extension som kompletterar FC Norrskens kalender med filter
 
 Krockkontrollen kräver samma datum och anläggning, överlappande tider och samma plan. En bokning av hela konstgräsplanen jämförs också med dess delplaner. Om kalendern anger en sluttid används den alltid i stället för den konfigurerade standardtiden.
 Aktiviteter utan en känd anläggning visas och kan filtreras fram, men räknas inte som plankrockar.
+Aktivitetstypen Övrigt krockar inte med matcher eller träningar. Två Övrigt-bokningar kan endast krocka när båda gäller konferensrummet på samma anläggning och deras tider överlappar. Övriga Övrigt-aktiviteter undantas från krockkontrollen.
 
 ## Installera lokalt
 

@@ -147,10 +147,21 @@
     return firstIsArtificial && secondIsArtificial && (firstIsWhole || secondIsWhole);
   }
 
+  function activitiesCanConflict(first, second) {
+    const firstIsOther = first.activityType === "Övrigt";
+    const secondIsOther = second.activityType === "Övrigt";
+    if (!firstIsOther && !secondIsOther) return true;
+
+    return firstIsOther && secondIsOther
+      && normalizePitch(first.pitch).includes("konferensrum")
+      && normalizePitch(second.pitch).includes("konferensrum");
+  }
+
   function eventsOverlap(first, second) {
     return first.hasKnownVenue && second.hasKnownVenue
       && first.dayRow === second.dayRow
       && first.venue === second.venue
+      && activitiesCanConflict(first, second)
       && pitchesOverlap(first.pitch, second.pitch)
       && first.start !== null && first.end !== null && second.start !== null && second.end !== null
       && first.start < second.end && second.start < first.end;
@@ -344,7 +355,7 @@
         <div class="fcn-duration-inputs"></div>
       </details>
       <div id="fcn-conflict-overview"></div>
-      <p class="fcn-method-note">Krockar jämförs på samma datum och plan. Hela konstgräsplanen räknas även mot dess delplaner. En angiven sluttid gäller alltid före standardtiden.</p>`;
+      <p class="fcn-method-note">Krockar jämförs på samma datum och plan. Hela konstgräsplanen räknas även mot dess delplaner. Övrigt räknas bara som krock när två Övrigt-bokningar överlappar i konferensrummet. En angiven sluttid gäller alltid före standardtiden.</p>`;
     calendars[0].parentElement.insertBefore(toolbar, calendars[0]);
 
     const weekSelect = toolbar.querySelector("#fcn-week-filter");
