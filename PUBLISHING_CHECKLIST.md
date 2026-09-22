@@ -15,6 +15,7 @@ The source package has been statically verified for both Chromium stores:
 - [x] The homepage, support page, privacy policy, and production test page are publicly reachable.
 - [x] The privacy disclosures match version `0.9.20`: calendar content is processed locally and only view and match-duration preferences are stored in site-local storage.
 - [x] Chromium smoke test against the production page rendered 196 selectable bookings, five filters, view switching, a details dialog, and conflict status without page errors.
+- [x] User-confirmed unpacked installation in developer mode loads and works against the production calendar.
 
 Static verification cannot replace interactive browser testing or the stores' own package validation.
 
@@ -27,7 +28,8 @@ Static verification cannot replace interactive browser testing or the stores' ow
 
 ## Extension package
 
-- [ ] Test the unpacked extension against the production calendar.
+- [x] Test the unpacked extension against the production calendar.
+- [ ] Repeat the unpacked installation test in both current stable Chrome and Edge if only one browser has been tested.
 - [x] Confirm `manifest.json` is valid Manifest V3 JSON.
 - [ ] Confirm the version is higher than every previously uploaded version.
 - [x] Add PNG extension icons and declare 16, 32, 48, and 128 pixel variants in `manifest.json`.
