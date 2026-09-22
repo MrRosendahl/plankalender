@@ -407,7 +407,7 @@
     });
   }
 
-  function openEventDetails(event, partners, conflictPartners) {
+  function openEventDetails(event, partners) {
     let dialog = document.getElementById("fcn-event-dialog");
     if (!dialog) {
       dialog = document.createElement("dialog");
@@ -421,9 +421,17 @@
     const calculatedText = event.hasCalculatedEnd
       ? `<p class="fcn-dialog-note">* Sluttiden är beräknad utifrån standardtiden för ${event.gameFormat}.</p>` : "";
     const conflictText = partners.length
-      ? `<section class="fcn-dialog-conflicts"><strong>⚠ Krockar med – välj bokning</strong><div>${partners.map((partner, index) =>
-        `<button type="button" data-conflict-index="${index}">${formatClock(partner.start)}–${formatClock(partner.end)} · ${shortTeamName(partner.team)} · ${partner.pitch}</button>`
-      ).join("")}</div></section>` : "";
+      ? `<section class="fcn-dialog-conflicts"><strong>⚠ Krockar med</strong><div>${partners.map((partner) => `
+        <article class="fcn-dialog-conflict">
+          <span>${partner.activityType}</span>
+          <h4>${shortTeamName(partner.team)}</h4>
+          <dl>
+            <div><dt>Tid</dt><dd>${formatClock(partner.start)}–${formatClock(partner.end)}</dd></div>
+            <div><dt>Plats</dt><dd>${partner.venue} · ${partner.pitch}</dd></div>
+            <div><dt>Aktivitet</dt><dd>${partner.text}</dd></div>
+          </dl>
+          ${partner.href ? `<a href="${partner.href}">Öppna kalenderhändelsen</a>` : ""}
+        </article>`).join("")}</div></section>` : "";
     const link = event.href ? `<a href="${event.href}">Öppna kalenderhändelsen</a>` : "";
     dialog.innerHTML = `
       <button type="button" class="fcn-dialog-close" aria-label="Stäng">×</button>
@@ -436,12 +444,6 @@
       </dl>
       ${calculatedText}${conflictText}${link}`;
     dialog.querySelector(".fcn-dialog-close").addEventListener("click", () => dialog.close());
-    dialog.querySelectorAll("[data-conflict-index]").forEach((button) => {
-      button.addEventListener("click", () => {
-        const selected = partners[Number(button.dataset.conflictIndex)];
-        openEventDetails(selected, conflictPartners.get(selected) ?? [], conflictPartners);
-      });
-    });
     if (!dialog.open) dialog.showModal();
   }
 
@@ -562,7 +564,7 @@
           eventHeading.textContent = eventHeading.dataset.fullHeading;
           eventMeta.textContent = `${formatClock(event.start)}–${formatClock(event.end ?? event.start + 30)}${event.hasCalculatedEnd ? "*" : ""} · ${event.activityType.charAt(0)}${partners.length ? " · ⚠" : ""}`;
           button.append(eventHeading, eventMeta);
-          button.addEventListener("click", () => openEventDetails(event, partners, conflictPartners));
+          button.addEventListener("click", () => openEventDetails(event, partners));
           canvas.append(button);
         });
 
@@ -606,7 +608,7 @@
               entryHeading.textContent = entryHeading.dataset.fullHeading;
               entryMeta.textContent = `${formatClock(event.start)}–${formatClock(event.end ?? event.start + 30)} · ${event.pitch}`;
               entry.append(entryHeading, entryMeta);
-              entry.addEventListener("click", () => openEventDetails(event, partners, conflictPartners));
+              entry.addEventListener("click", () => openEventDetails(event, partners));
               conflictEntries.append(entry);
             });
 
