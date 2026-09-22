@@ -261,20 +261,61 @@
   }
 
   function getMatrixColumns(events) {
-    const pitches = [...new Set(events.map((event) => event.pitch))]
-      .sort((first, second) => first.localeCompare(second, "sv"));
-    const artificialParts = pitches.filter((pitch) => normalizePitch(pitch).includes("konstgräs") && !isWholeArtificialPitch(pitch));
-    return pitches.filter((pitch) => !isWholeArtificialPitch(pitch) || artificialParts.length === 0);
+    const pitchesByNormalizedName = new Map();
+    events.forEach((event) => {
+      const normalized = normalizePitch(event.pitch);
+      if (!pitchesByNormalizedName.has(normalized)) pitchesByNormalizedName.set(normalized, event.pitch);
+    });
+    return [...pitchesByNormalizedName.values()].sort((first, second) => first.localeCompare(second, "sv"));
   }
 
   function getEventColumnRange(event, columns) {
-    if (isWholeArtificialPitch(event.pitch)) {
-      const indexes = columns.map((pitch, index) => normalizePitch(pitch).includes("konstgräs") ? index : -1)
-        .filter((index) => index >= 0);
-      if (indexes.length) return [Math.min(...indexes), Math.max(...indexes) + 1];
-    }
     const index = Math.max(0, columns.findIndex((pitch) => normalizePitch(pitch) === normalizePitch(event.pitch)));
     return [index, index + 1];
+  }
+
+  function getEventLaneLayout(events, columns) {
+    const layout = new Map();
+    const byColumnRange = new Map();
+
+    events.forEach((event) => {
+      const range = getEventColumnRange(event, columns);
+      const key = range.join(":");
+      if (!byColumnRange.has(key)) byColumnRange.set(key, []);
+      byColumnRange.get(key).push({ event, range });
+    });
+
+    byColumnRange.forEach((items) => {
+      items.sort((first, second) => first.event.start - second.event.start
+        || (first.event.end ?? first.event.start + 30) - (second.event.end ?? second.event.start + 30));
+
+      let cluster = [];
+      let clusterEnd = -Infinity;
+      const finishCluster = () => {
+        if (!cluster.length) return;
+        const laneEnds = [];
+        cluster.forEach((item) => {
+          const availableLane = laneEnds.findIndex((end) => end <= item.event.start);
+          item.lane = availableLane < 0 ? laneEnds.length : availableLane;
+          laneEnds[item.lane] = item.event.end ?? item.event.start + 30;
+        });
+        const laneCount = Math.max(1, laneEnds.length);
+        cluster.forEach((item) => layout.set(item.event, { range: item.range, lane: item.lane, laneCount }));
+      };
+
+      items.forEach((item) => {
+        if (cluster.length && item.event.start >= clusterEnd) {
+          finishCluster();
+          cluster = [];
+          clusterEnd = -Infinity;
+        }
+        cluster.push(item);
+        clusterEnd = Math.max(clusterEnd, item.event.end ?? item.event.start + 30);
+      });
+      finishCluster();
+    });
+
+    return layout;
   }
 
   function shortTeamName(team) {
@@ -337,7 +378,7 @@
     dialog.showModal();
   }
 
-  function renderScheduleOverview(container, events) {
+  function renderScheduleOverview(container, events, showVenueHeadings = true) {
     const conflictGroups = findConflictGroups(events);
     const conflictingEvents = new Set(conflictGroups.flat());
     const conflictPartners = findConflictPartners(events);
@@ -375,6 +416,7 @@
 
       [...byVenue.entries()].sort(([first], [second]) => first.localeCompare(second, "sv")).forEach(([venue, venueEvents]) => {
         const columns = getMatrixColumns(venueEvents);
+        const eventLaneLayout = getEventLaneLayout(venueEvents, columns);
         const starts = venueEvents.map((event) => event.start);
         const ends = venueEvents.map((event) => event.end ?? event.start + 30);
         const firstMinute = Math.floor(Math.min(...starts) / 30) * 30;
@@ -382,7 +424,11 @@
         const duration = Math.max(60, lastMinute - firstMinute);
         const venueSection = document.createElement("article");
         venueSection.className = "fcn-matrix-section";
-        venueSection.innerHTML = `<h4>${venue}</h4>`;
+        if (showVenueHeadings) {
+          const venueHeading = document.createElement("h4");
+          venueHeading.textContent = venue;
+          venueSection.append(venueHeading);
+        }
 
         const scroll = document.createElement("div");
         scroll.className = "fcn-matrix-scroll";
@@ -421,7 +467,9 @@
         }
 
         venueEvents.sort((first, second) => first.start - second.start).forEach((event) => {
-          const [columnStart, columnEnd] = getEventColumnRange(event, columns);
+          const { range: [columnStart, columnEnd], lane, laneCount } = eventLaneLayout.get(event);
+          const columnWidth = (columnEnd - columnStart) / columns.length * 100;
+          const laneWidth = columnWidth / laneCount;
           const button = document.createElement("button");
           const eventHeading = document.createElement("strong");
           const eventMeta = document.createElement("span");
@@ -431,8 +479,8 @@
           button.className = `fcn-matrix-event fcn-event-${typeClass}${partners.length ? " fcn-list-event-conflict" : ""}`;
           button.style.top = `${(event.start - firstMinute) * 1.2}px`;
           button.style.height = `${Math.max(28, ((event.end ?? event.start + 30) - event.start) * 1.2)}px`;
-          button.style.left = `calc(${columnStart / columns.length * 100}% + 2px)`;
-          button.style.width = `calc(${(columnEnd - columnStart) / columns.length * 100}% - 4px)`;
+          button.style.left = `calc(${columnStart / columns.length * 100 + lane * laneWidth}% + 2px)`;
+          button.style.width = `calc(${laneWidth}% - 4px)`;
           button.title = `${event.team} · ${event.text}`;
           eventHeading.dataset.fullHeading = [shortTeamName(event.team), additionalEventInfo(event)]
             .filter(Boolean)
@@ -607,7 +655,7 @@
         ? `${groups.length} ${groups.length === 1 ? "krock" : "krockar"}`
         : "Inga krockar";
       count.classList.toggle("fcn-count-clear", groups.length === 0);
-      renderScheduleOverview(overview, filtered);
+      renderScheduleOverview(overview, filtered, !venueSelect.value);
     }
 
     function setCalendarView(view) {

@@ -10,7 +10,8 @@ En lokal Chrome/Edge-extension som kompletterar FC Norrskens kalender med filter
 - Visar hela månaden som standard men låter användaren begränsa listan till en enskild vecka.
 - Visar bokningarna i en tidsmatris per dag och anläggning, med tid lodrätt och planer som kolumner.
 - Låter användaren växla mellan den avancerade plankalendern och SportAdmins originalkalender. Valet sparas lokalt.
-- Visar hela konstgräsplanen som ett sammanhängande block över dess delplaner.
+- Visar hela konstgräsplanen i en egen kolumn så att samtidiga bokningar på delplanerna förblir synliga.
+- Delar samtidiga bokningar på samma plan i sidställda spår i stället för att lägga dem ovanpå varandra.
 - Öppnar fullständig boknings- och krockinformation när ett block klickas.
 - Markerar krockande grupper och bokningar med rött.
 - Visar vilken tid, vilket lag och vilken plan varje krockande bokning överlappar.
