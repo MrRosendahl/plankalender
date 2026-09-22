@@ -8,7 +8,8 @@
 #calWrap.fcn-calendar-replaced:not(.fcn-show-original) > div.visib2le-phone,
 #calWrap.fcn-calendar-replaced:not(.fcn-show-original) > .inner .calBoxBig,
 .sa-calendar.fcn-calendar-replaced:not(.fcn-show-original) > .sa-calendar__week-header,
-.sa-calendar.fcn-calendar-replaced:not(.fcn-show-original) > .sa-calendar__date-group {
+.sa-calendar.fcn-calendar-replaced:not(.fcn-show-original) > .sa-calendar__date-group,
+.sa-calendar.fcn-calendar-replaced:not(.fcn-show-original) > .sa-calendar__filters {
   display: none !important;
 }
 
@@ -118,12 +119,11 @@
   font-size: 14px;
 }
 #fcn-plankalender .fcn-matrix-scroll {
-  overflow-x: auto;
-  overflow-y: hidden;
+  overflow: hidden;
 }
 #fcn-plankalender .fcn-time-matrix {
-  display: grid; grid-template-columns: 58px minmax(calc(var(--columns) * 130px), 1fr);
-  grid-template-rows: 42px auto; min-width: calc(58px + var(--columns) * 130px);
+  display: grid; grid-template-columns: 58px minmax(0, 1fr);
+  grid-template-rows: 42px auto; min-width: 0;
 }
 #fcn-plankalender .fcn-matrix-corner {
   display: grid; place-items: center; border-right: 1px solid #d7e0e4;
@@ -171,6 +171,38 @@
 }
 #fcn-plankalender .fcn-matrix-event.fcn-list-event-conflict:hover,
 #fcn-plankalender .fcn-matrix-event.fcn-list-event-conflict:focus-visible { opacity: 0.96; }
+
+#fcn-plankalender .fcn-matrix-conflict-block {
+  position: absolute; z-index: 4; box-sizing: border-box; display: flex; flex-direction: column;
+  overflow: hidden; border: 2px solid #c7382f; border-radius: 7px;
+  background: rgba(255, 255, 255, 0.94); box-shadow: 0 2px 7px rgba(89, 34, 29, 0.2);
+}
+#fcn-plankalender .fcn-matrix-conflict-block > strong {
+  flex: 0 0 18px; box-sizing: border-box; padding: 2px 6px; overflow: hidden;
+  background: #c7382f; color: #fff; font-size: 9px; line-height: 14px;
+  text-overflow: ellipsis; white-space: nowrap;
+}
+#fcn-plankalender .fcn-conflict-entries {
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-rows: repeat(var(--conflict-rows), minmax(0, 1fr));
+  flex: 1 1 auto; gap: 2px; min-height: 0; padding: 2px; overflow: hidden;
+}
+#fcn-plankalender .fcn-conflict-entry {
+  display: flex; flex-direction: column; align-items: flex-start; justify-content: center;
+  gap: 0; min-width: 0; min-height: 0; padding: 1px 5px; overflow: hidden;
+  border: 1px solid #8caaba; border-left: 4px solid #477c99;
+  border-radius: 4px; background: #dcecf8; color: #173d52; text-align: left;
+}
+#fcn-plankalender .fcn-conflict-entry.fcn-event-traning { border-color: #85ae93; border-left-color: #3e7c53; background: #e4f1e8; color: #245537; }
+#fcn-plankalender .fcn-conflict-entry.fcn-event-ovrigt { border-color: #a696b9; border-left-color: #72568d; background: #eee9f5; color: #513c68; }
+#fcn-plankalender .fcn-conflict-entry:hover { filter: brightness(0.95); box-shadow: 0 1px 4px rgba(25, 55, 70, 0.24); }
+#fcn-plankalender .fcn-conflict-entry:focus-visible { outline: 3px solid rgba(23, 79, 112, 0.35); outline-offset: -2px; }
+#fcn-plankalender .fcn-conflict-entry strong {
+  max-width: 100%; overflow: hidden; font-size: 10px; line-height: 1.05; text-overflow: ellipsis; white-space: nowrap;
+}
+#fcn-plankalender .fcn-conflict-entry span {
+  max-width: 100%; overflow: hidden; color: inherit; font-size: 8px; line-height: 1.05; text-overflow: ellipsis; white-space: nowrap;
+}
 
 #fcn-event-dialog {
   box-sizing: border-box; width: min(480px, calc(100vw - 28px)); padding: 22px;

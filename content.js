@@ -185,6 +185,16 @@
     return option;
   }
 
+  function eventBelongsToSection(event, section) {
+    if (!section) return true;
+    const normalizedTeam = normalize(event.team).toLocaleLowerCase("sv-SE");
+    const normalizedSection = normalize(section).toLocaleLowerCase("sv-SE");
+    return normalizedTeam === normalizedSection
+      || normalizedTeam.startsWith(`${normalizedSection} `)
+      || normalizedTeam.includes(` ${normalizedSection} `)
+      || normalizedTeam.endsWith(` ${normalizedSection}`);
+  }
+
   function pitchesOverlap(firstPitch, secondPitch) {
     const first = normalizePitch(firstPitch);
     const second = normalizePitch(secondPitch);
@@ -192,9 +202,10 @@
 
     const firstIsArtificial = first.includes("konstgräs");
     const secondIsArtificial = second.includes("konstgräs");
-    const firstIsWhole = first === "konstgräs" || first.includes("hela");
-    const secondIsWhole = second === "konstgräs" || second.includes("hela");
-    return firstIsArtificial && secondIsArtificial && (firstIsWhole || secondIsWhole);
+    if (!firstIsArtificial || !secondIsArtificial) return false;
+    const [firstStart, firstEnd] = getPitchSubdivisionRange(firstPitch);
+    const [secondStart, secondEnd] = getPitchSubdivisionRange(secondPitch);
+    return firstStart < secondEnd && secondStart < firstEnd;
   }
 
   function activitiesCanConflict(first, second) {
@@ -281,6 +292,40 @@
     return [index, index + 1];
   }
 
+  function getPitchSubdivisionRange(pitch) {
+    const normalized = normalizePitch(pitch);
+    if (isWholeArtificialPitch(pitch)) return [0, 4];
+
+    const quarter = normalized.match(/1\s*\/\s*4\s*([a-d])/i)?.[1]?.toLocaleLowerCase("sv-SE");
+    if (quarter) {
+      const start = quarter.charCodeAt(0) - "a".charCodeAt(0);
+      return [start, start + 1];
+    }
+
+    const half = Number(normalized.match(/halvplan\s*([12])/)?.[1]);
+    if (half === 1) return [0, 2];
+    if (half === 2) return [2, 4];
+    return [0, 4];
+  }
+
+  function getConflictEntryRows(events) {
+    const rows = [];
+    const layout = new Map();
+    events.forEach((event) => {
+      const range = getPitchSubdivisionRange(event.pitch);
+      const end = event.end ?? event.start + 30;
+      let rowIndex = rows.findIndex((row) => row.start === event.start && row.end === end
+        && row.ranges.every(([start, rangeEnd]) => range[0] >= rangeEnd || start >= range[1]));
+      if (rowIndex < 0) {
+        rowIndex = rows.length;
+        rows.push({ start: event.start, end, ranges: [] });
+      }
+      rows[rowIndex].ranges.push(range);
+      layout.set(event, { range, row: rowIndex + 1 });
+    });
+    return layout;
+  }
+
   function getEventLaneLayout(events, columns) {
     const layout = new Map();
     const byColumnRange = new Map();
@@ -343,7 +388,7 @@
   }
 
   function fitEventHeadings(container) {
-    container.querySelectorAll(".fcn-matrix-event strong[data-full-heading]").forEach((heading) => {
+    container.querySelectorAll(".fcn-matrix-event strong[data-full-heading], .fcn-conflict-entry strong[data-full-heading]").forEach((heading) => {
       const availableWidth = heading.parentElement.clientWidth - 18;
       const characterLimit = Math.max(4, Math.floor(availableWidth / 7));
       const fullHeading = heading.dataset.fullHeading;
@@ -430,6 +475,8 @@
       [...byVenue.entries()].sort(([first], [second]) => first.localeCompare(second, "sv")).forEach(([venue, venueEvents]) => {
         const columns = getMatrixColumns(venueEvents);
         const eventLaneLayout = getEventLaneLayout(venueEvents, columns);
+        const venueConflictGroups = findConflictGroups(venueEvents);
+        const groupedEvents = new Set(venueConflictGroups.flat());
         const starts = venueEvents.map((event) => event.start);
         const ends = venueEvents.map((event) => event.end ?? event.start + 30);
         const firstMinute = Math.floor(Math.min(...starts) / 30) * 30;
@@ -453,7 +500,7 @@
         corner.textContent = "Tid";
         const headers = document.createElement("div");
         headers.className = "fcn-matrix-headers";
-        headers.style.gridTemplateColumns = `repeat(${columns.length}, minmax(130px, 1fr))`;
+        headers.style.gridTemplateColumns = `repeat(${columns.length}, minmax(0, 1fr))`;
         columns.forEach((pitch) => {
           const header = document.createElement("strong");
           header.textContent = pitch;
@@ -463,7 +510,6 @@
         times.className = "fcn-matrix-times";
         const canvas = document.createElement("div");
         canvas.className = "fcn-matrix-canvas";
-        canvas.style.minWidth = `${columns.length * 130}px`;
         canvas.style.height = `${duration * 1.2}px`;
         times.style.height = canvas.style.height;
 
@@ -479,7 +525,7 @@
           canvas.append(line);
         }
 
-        venueEvents.sort((first, second) => first.start - second.start).forEach((event) => {
+        venueEvents.filter((event) => !groupedEvents.has(event)).sort((first, second) => first.start - second.start).forEach((event) => {
           const { range: [columnStart, columnEnd], lane, laneCount } = eventLaneLayout.get(event);
           const columnWidth = (columnEnd - columnStart) / columns.length * 100;
           const laneWidth = columnWidth / laneCount;
@@ -504,6 +550,51 @@
           button.append(eventHeading, eventMeta);
           button.addEventListener("click", () => openEventDetails(event, partners, conflictPartners));
           canvas.append(button);
+        });
+
+        venueConflictGroups.forEach((group) => {
+          group.sort((first, second) => first.start - second.start || shortTeamName(first.team).localeCompare(shortTeamName(second.team), "sv"));
+          const conflictEntryRows = getConflictEntryRows(group);
+          const conflictRowCount = Math.max(...[...conflictEntryRows.values()].map((item) => item.row));
+          const groupStart = Math.min(...group.map((event) => event.start));
+          const groupEnd = Math.max(...group.map((event) => event.end ?? event.start + 30));
+          const ranges = group.map((event) => getEventColumnRange(event, columns));
+          const columnStart = Math.min(...ranges.map((range) => range[0]));
+          const columnEnd = Math.max(...ranges.map((range) => range[1]));
+          const conflictBlock = document.createElement("section");
+          const conflictHeading = document.createElement("strong");
+          const conflictEntries = document.createElement("div");
+          conflictBlock.className = "fcn-matrix-conflict-block";
+          conflictBlock.style.top = `${(groupStart - firstMinute) * 1.2}px`;
+          conflictBlock.style.height = `${(groupEnd - groupStart) * 1.2}px`;
+          conflictBlock.style.left = `calc(${columnStart / columns.length * 100}% + 2px)`;
+          conflictBlock.style.width = `calc(${(columnEnd - columnStart) / columns.length * 100}% - 4px)`;
+          conflictBlock.style.setProperty("--conflict-rows", conflictRowCount);
+          conflictHeading.textContent = `⚠ Krockgrupp · ${group.length} bokningar`;
+          conflictEntries.className = "fcn-conflict-entries";
+
+          group.forEach((event) => {
+              const entry = document.createElement("button");
+              const entryHeading = document.createElement("strong");
+              const entryMeta = document.createElement("span");
+              const typeClass = event.activityType.toLocaleLowerCase("sv-SE").replace("ä", "a").replace("ö", "o");
+              const partners = conflictPartners.get(event) ?? [];
+              const { range: [pitchStart, pitchEnd], row } = conflictEntryRows.get(event);
+              entry.type = "button";
+              entry.className = `fcn-conflict-entry fcn-event-${typeClass}`;
+              entry.style.gridColumn = `${pitchStart + 1} / ${pitchEnd + 1}`;
+              entry.style.gridRow = String(row);
+              entry.title = `${event.team} · ${event.text}`;
+              entryHeading.dataset.fullHeading = [shortTeamName(event.team), additionalEventInfo(event)].filter(Boolean).join(" · ");
+              entryHeading.textContent = entryHeading.dataset.fullHeading;
+              entryMeta.textContent = `${formatClock(event.start)}–${formatClock(event.end ?? event.start + 30)} · ${event.pitch}`;
+              entry.append(entryHeading, entryMeta);
+              entry.addEventListener("click", () => openEventDetails(event, partners, conflictPartners));
+              conflictEntries.append(entry);
+            });
+
+          conflictBlock.append(conflictHeading, conflictEntries);
+          canvas.append(conflictBlock);
         });
 
         matrix.append(corner, headers, times, canvas);
@@ -540,6 +631,7 @@
     const previousPitch = existingToolbar?.querySelector("#fcn-pitch-filter")?.value ?? "";
     const previousActivity = existingToolbar?.querySelector("#fcn-activity-filter")?.value ?? "";
     const previousWeek = existingToolbar?.querySelector("#fcn-week-filter")?.value ?? "";
+    const previousSection = existingToolbar?.querySelector("#fcn-section-filter")?.value ?? "";
     existingToolbar?.remove();
     document.getElementById(VIEW_SWITCH_ID)?.remove();
 
@@ -562,6 +654,7 @@
         <output id="fcn-conflict-count" aria-live="polite"></output>
       </div>
       <div class="fcn-filter-controls">
+        <label><span>Sektion</span><select id="fcn-section-filter"></select></label>
         <label><span>Period</span><select id="fcn-week-filter"></select></label>
         <label><span>Anläggning</span><select id="fcn-venue-filter"></select></label>
         <label><span>Plan</span><select id="fcn-pitch-filter" disabled></select></label>
@@ -594,6 +687,7 @@
       viewSwitch.after(toolbar);
     }
 
+    const sectionSelect = toolbar.querySelector("#fcn-section-filter");
     const weekSelect = toolbar.querySelector("#fcn-week-filter");
     const venueSelect = toolbar.querySelector("#fcn-venue-filter");
     const pitchSelect = toolbar.querySelector("#fcn-pitch-filter");
@@ -601,6 +695,14 @@
     const overview = toolbar.querySelector("#fcn-conflict-overview");
     const count = toolbar.querySelector("#fcn-conflict-count");
     const durationInputs = toolbar.querySelector(".fcn-duration-inputs");
+
+    const originalSectionSelect = document.querySelector(".sa-calendar__filters .sa-calendar__filter-select");
+    const sections = [...(originalSectionSelect?.options ?? [])]
+      .map((option) => normalize(option.textContent))
+      .filter((section) => section && section.toLocaleLowerCase("sv-SE") !== "hem");
+    sectionSelect.append(createOption("", "Alla sektioner"));
+    sections.forEach((section) => sectionSelect.append(createOption(section)));
+    sectionSelect.value = sections.includes(previousSection) ? previousSection : "";
 
     const weeks = [...new Set(events.map((event) => event.week).filter(Boolean))]
       .sort((first, second) => Number(first) - Number(second));
@@ -625,23 +727,30 @@
     function updatePitchOptions() {
       const selectedVenue = venueSelect.value;
       const currentPitch = pitchSelect.value;
-      const pitches = [...new Set(events.filter((event) =>
-        (!weekSelect.value || event.week === weekSelect.value)
+      const pitchesByNormalizedName = new Map();
+      events.filter((event) =>
+        eventBelongsToSection(event, sectionSelect.value)
+        && (!weekSelect.value || event.week === weekSelect.value)
         && (!selectedVenue || event.venue === selectedVenue))
-        .map((event) => event.pitch).filter(Boolean))]
-        .sort((a, b) => a.localeCompare(b, "sv"));
+        .map((event) => event.pitch).filter(Boolean)
+        .forEach((pitch) => {
+          const normalized = normalizePitch(pitch);
+          if (!pitchesByNormalizedName.has(normalized)) pitchesByNormalizedName.set(normalized, pitch);
+        });
+      const pitches = [...pitchesByNormalizedName.values()].sort((a, b) => a.localeCompare(b, "sv"));
       pitchSelect.replaceChildren(createOption("", "Alla planer"));
       pitches.forEach((pitch) => pitchSelect.append(createOption(pitch)));
       pitchSelect.disabled = !selectedVenue;
-      pitchSelect.value = pitches.includes(currentPitch) ? currentPitch : "";
+      pitchSelect.value = pitches.find((pitch) => normalizePitch(pitch) === normalizePitch(currentPitch)) ?? "";
     }
 
     function applyFilter() {
-      const active = weekSelect.value || venueSelect.value || pitchSelect.value || activitySelect.value;
+      const active = sectionSelect.value || weekSelect.value || venueSelect.value || pitchSelect.value || activitySelect.value;
       const filtered = events.filter((event) =>
-        (!weekSelect.value || event.week === weekSelect.value)
+        eventBelongsToSection(event, sectionSelect.value)
+        && (!weekSelect.value || event.week === weekSelect.value)
         && (!venueSelect.value || event.venue === venueSelect.value)
-        && (!pitchSelect.value || event.pitch === pitchSelect.value)
+        && (!pitchSelect.value || normalizePitch(event.pitch) === normalizePitch(pitchSelect.value))
         && (!activitySelect.value || event.activityType === activitySelect.value));
 
       const visibleRows = new Set(filtered.map((event) => event.row));
@@ -701,11 +810,13 @@
       localStorage.setItem(CALENDAR_VIEW_KEY, view);
     }
 
+    sectionSelect.addEventListener("change", () => { updatePitchOptions(); applyFilter(); });
     weekSelect.addEventListener("change", () => { updatePitchOptions(); applyFilter(); });
     venueSelect.addEventListener("change", () => { updatePitchOptions(); applyFilter(); });
     pitchSelect.addEventListener("change", applyFilter);
     activitySelect.addEventListener("change", applyFilter);
     toolbar.querySelector("#fcn-reset-filter").addEventListener("click", () => {
+      sectionSelect.value = "";
       weekSelect.value = "";
       venueSelect.value = "";
       pitchSelect.value = "";
