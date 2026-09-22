@@ -108,7 +108,17 @@
   background: #fff9f8; box-shadow: inset 3px 0 #c7382f;
 }
 #fcn-plankalender .fcn-conflict-group time { font-weight: 700; font-variant-numeric: tabular-nums; }
+#fcn-plankalender .fcn-calculated-marker { margin-left: 1px; color: #60717a; cursor: help; font-size: 10px; }
 #fcn-plankalender .fcn-event-title { min-width: 0; color: #244f67; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#fcn-plankalender .fcn-calculated-note {
+  display: flex; align-items: center; gap: 4px; margin: -8px 12px 14px;
+  color: #687980; font-size: 10px;
+}
+#fcn-plankalender .fcn-info-icon {
+  display: inline-grid; place-items: center; width: 14px; height: 14px;
+  border: 1px solid #7895a5; border-radius: 50%; color: #365c70;
+  cursor: help; font-size: 9px; font-style: normal; font-weight: 700;
+}
 #fcn-plankalender .fcn-event-match .fcn-event-title { font-weight: 700; }
 #fcn-plankalender .fcn-conflict-group small { grid-column: 3; margin-top: -6px; color: #75848b; font-size: 10px; }
 #fcn-plankalender .fcn-conflict-group .fcn-conflict-details { margin-top: 0; color: #9b3029; font-weight: 700; }

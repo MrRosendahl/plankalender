@@ -281,7 +281,20 @@
           const typeClass = event.activityType.toLocaleLowerCase("sv-SE").replace("ä", "a").replace("ö", "o");
           item.classList.add(`fcn-event-${typeClass}`);
           const timeText = event.end === null ? formatClock(event.start) : `${formatClock(event.start)}–${formatClock(event.end)}`;
-          item.innerHTML = `<time>${timeText}</time><span class="fcn-type fcn-type-${typeClass}">${event.activityType}</span>`;
+          const time = document.createElement("time");
+          time.textContent = timeText;
+          if (event.hasCalculatedEnd) {
+            const marker = document.createElement("sup");
+            marker.className = "fcn-calculated-marker";
+            marker.textContent = "*";
+            marker.title = `Sluttiden är beräknad utifrån standardtiden för ${event.gameFormat}`;
+            marker.setAttribute("aria-label", `Sluttiden är beräknad utifrån standardtiden för ${event.gameFormat}`);
+            time.append(marker);
+          }
+          const type = document.createElement("span");
+          type.className = `fcn-type fcn-type-${typeClass}`;
+          type.textContent = event.activityType;
+          item.append(time, type);
           const eventTitle = event.href ? document.createElement("a") : document.createElement("span");
           eventTitle.className = "fcn-event-title";
           eventTitle.textContent = `${event.team ? `${event.team} · ` : ""}${event.text.split(",")[0]}`;
@@ -310,12 +323,6 @@
               item.append(priority);
             }
           }
-          if (event.hasCalculatedEnd) {
-            const calculated = document.createElement("small");
-            calculated.className = "fcn-calculated-end";
-            calculated.textContent = `${event.gameFormat}, beräknad sluttid`;
-            item.append(calculated);
-          }
           list.append(item);
         });
         group.append(list);
@@ -323,6 +330,13 @@
       });
       fragment.append(section);
     });
+    if (scheduledEvents.some((event) => event.hasCalculatedEnd)) {
+      const calculatedNote = document.createElement("p");
+      calculatedNote.className = "fcn-calculated-note";
+      calculatedNote.title = "Sluttiden räknas fram med den standardtid som är inställd under Matchtider.";
+      calculatedNote.innerHTML = '<span aria-hidden="true">*</span> Beräknad sluttid utifrån matchformatets standardtid. <span class="fcn-info-icon" aria-label="Sluttiden räknas fram med den standardtid som är inställd under Matchtider." role="img">i</span>';
+      fragment.append(calculatedNote);
+    }
     container.replaceChildren(fragment);
   }
 
